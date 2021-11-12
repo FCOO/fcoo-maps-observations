@@ -1,0 +1,42 @@
+{
+  "name": "fcoo-maps-observations",
+  "version": "1.0.0",
+  "homepage": "https://github.com/FCOO/fcoo-maps-observations",
+  "authors": [
+    "Niels Holt"
+  ],
+  "description": "",
+  "main": [
+    "dist/fcoo-maps-observations.js",
+    "dist/fcoo-maps-observations.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/FCOO/fcoo-maps-observations.git"
+  },
+  "dependencies": {
+    "fcoo-observations": "fcoo/fcoo-observations#latest",
+    "fcoo-maps": "fcoo/fcoo-maps#latest"
+  },
+  "overrides": {
+    "fcoo-observations": {
+      "main": "dist/fcoo-observations.js"
+    }
+  },
+  "devDependencies": {
+    "bourbon": "latest",
+    "modernizr-mixin": "latest",
+    "mathsass": "latest"
+  },
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "moduleType": [
+    "es6"
+  ]
+}

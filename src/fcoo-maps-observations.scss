@@ -1,0 +1,33 @@
+/***********************************************
+    fcoo-maps-observations.scss,
+
+    (c) 2021, FCOO
+
+    https://github.com/FCOO/fcoo-maps-observations
+    https://github.com/FCOO
+
+
+************************************************/
+//BOURBON - http://bourbon.io/
+@import "../bower_components/bourbon/core/bourbon";
+
+//MODERNIZR-MIXIN - https://github.com/danielguillan/modernizr-mixin
+@import "../bower_components/modernizr-mixin/stylesheets/modernizr";
+
+//MATHSASS - https://github.com/terkel/mathsass
+@import "../bower_components/mathsass/dist/math";
+
+//MODERNIZR-SCSS - https://github.com/FCOO/modernizr-scss
+@import "../bower_components/modernizr-scss/dist/modernizr-scss";
+
+//JQUERY-BOOTSTRAP VARIABLES AND MIXINS
+@import "../bower_components/jquery-bootstrap/src/include-jquery-bootstrap-variables";
+
+
+@import "../bower_components/fcoo-observations/src/fcoo-observations-mixin";
+
+
+
+
+
+
