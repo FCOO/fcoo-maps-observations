@@ -1189,6 +1189,9 @@ $font-size-base         : 1rem !default;
 $spacer                 : 1rem !default;
 */
 /************************************************************
+Set margin for buttons in block
+************************************************************/
+/************************************************************
 Adjust dropdown-menu
 ************************************************************/
 /************************************************************
@@ -3420,7 +3423,7 @@ fieldset:disabled a.btn {
   display: block;
   width: 100%; }
   .btn-block + .btn-block {
-    margin-top: 0.5rem; }
+    margin-top: 0 !important; }
 
 input[type="submit"].btn-block,
 input[type="reset"].btn-block,
@@ -9871,7 +9874,7 @@ Modernizr-test for elements with class="active" when selected
 Including .btn-xs and btn-group-xs as in Bootstrap 3
 ************************************************************/
 .btn-xs, .btn-group-xs > .btn {
-  padding: 0.1875rem 0.25rem;
+  padding: 0.125rem 0.1875rem;
   font-size: 0.75rem;
   line-height: 1.5;
   border-radius: 0.125rem; }
@@ -9904,10 +9907,10 @@ BUTTON-GROUP
   padding-top: 3px; }
 
 .btn-group-vertical .btn-group-header {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.25rem 0.3125rem;
   font-size: 1rem;
   line-height: 1.5;
@@ -9927,10 +9930,10 @@ BUTTON-GROUP
     padding-left: 0.625rem; }
 
 .btn-group-vertical.btn-group-sm .btn-group-header {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -9947,12 +9950,12 @@ BUTTON-GROUP
     padding-left: 0.5rem; }
 
 .btn-group-vertical.btn-group-xs .btn-group-header {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.125rem 0.1875rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   border-radius: inherit;
   line-height: 1.3; }
@@ -9964,7 +9967,7 @@ BUTTON-GROUP
     overflow: visible;
     word-break: keep-all; }
   .btn-group-vertical.btn-group-xs .btn-group-header ~ .btn {
-    padding-left: 0.5rem; }
+    padding-left: 0.375rem; }
 
 .btn-group-vertical + .btn-group-vertical {
   margin-top: 0.25rem; }
@@ -9972,6 +9975,13 @@ BUTTON-GROUP
     margin-top: 0.1875rem; }
   .btn-group-vertical + .btn-group-vertical.btn-group-xs {
     margin-top: 0.1875rem; }
+
+/************************************************************
+BLOCK BUTTONS (from Bootstrap)
+Extend to also include margin-bottom
+************************************************************/
+.btn-block + .btn-block {
+  margin-bottom: 0 !important; }
 
 /************************************************************
 MENU (BUTTON-GROUP)
@@ -10012,10 +10022,10 @@ POPOVER
   border-bottom: none; }
 
 .popover .popover-header-content {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.25rem 0.3125rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -10041,10 +10051,10 @@ POPOVER
   padding: 1px !important; }
 
 .popover .popover-footer {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.25rem 0.3125rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -10066,10 +10076,10 @@ POPOVER
     display: none !important; }
 
 .popover.popover-sm .popover-header-content {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -10086,10 +10096,10 @@ POPOVER
     word-break: keep-all; }
 
 .popover.popover-sm .popover-footer {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -10392,10 +10402,10 @@ bsSelectList
       color: rgba(81, 89, 97, 0.65);
       background: #f8f9fa linear-gradient(180deg, #f9fafb, #f8f9fa) repeat-x; }
   .dropdown-menu .dropdown-header, .selectList .dropdown-header {
-    font-weight: 700;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 700;
     padding: 0.25rem 0.3125rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -10418,10 +10428,10 @@ bsSelectList
   border-radius: 0.1875rem; }
 
 .selectList.selectList-sm .dropdown-header, .dropdown-menu.dropdown-menu-sm .dropdown-header {
-  font-weight: 700;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 700;
   padding: 0.1875rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -10436,18 +10446,18 @@ bsSelectList
     word-break: keep-all; }
 
 .selectList.selectList-xs .dropdown-item, .dropdown-menu.dropdown-menu-xs .dropdown-item {
-  padding: 0.1875rem 0.25rem;
+  padding: 0.125rem 0.1875rem;
   font-size: 0.75rem;
   line-height: 1.5;
   border-radius: 0.125rem; }
 
 .selectList.selectList-xs .dropdown-header, .dropdown-menu.dropdown-menu-xs .dropdown-header {
-  font-weight: 700;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 700;
   padding: 0.125rem 0.1875rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   border-radius: inherit; }
   .selectList.selectList-xs .dropdown-header span, .dropdown-menu.dropdown-menu-xs .dropdown-header span {
@@ -10638,10 +10648,10 @@ body.modal-open .modal {
   .modal-dialog .modal-content .modal-header {
     flex-shrink: 0;
     flex-grow: 0;
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -10709,10 +10719,10 @@ body.modal-open .modal {
   .modal-dialog .modal-content .modal-footer-header {
     flex-shrink: 0;
     flex-grow: 0;
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -10740,15 +10750,17 @@ body.modal-open .modal {
     padding: 0.3125rem; }
     .modal-dialog .modal-content .modal-footer:empty, .modal-dialog .modal-content .modal-footer.modal-footer-vertical:empty {
       display: none !important; }
-    .modal-dialog .modal-content .modal-footer.modal-footer-vertical {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center; }
-      .modal-dialog .modal-content .modal-footer.modal-footer-vertical > * {
-        margin: 0; }
-      .modal-dialog .modal-content .modal-footer.modal-footer-vertical > *:not(:first-child) {
-        margin-top: .25rem; }
+  .modal-dialog .modal-content .modal-footer.vertical-buttons,
+  .modal-dialog .modal-content.modal-normal .modal-footer.vertical-buttons-for-normal,
+  .modal-dialog .modal-content.modal-extended .modal-footer.vertical-buttons-for-extended {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center; }
+    .modal-dialog .modal-content .modal-footer.vertical-buttons > .btn,
+    .modal-dialog .modal-content.modal-normal .modal-footer.vertical-buttons-for-normal > .btn,
+    .modal-dialog .modal-content.modal-extended .modal-footer.vertical-buttons-for-extended > .btn {
+      margin: 1px; }
   .modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent, .modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent, .modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent {
     background: none; }
     .modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent .modal-body, .modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent .modal-body-fixed, .modal-dialog .modal-content.modal-minimized.modal-minimized-semi-transparent .modal-footer, .modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent .modal-body, .modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent .modal-body-fixed, .modal-dialog .modal-content.modal-normal.modal-normal-semi-transparent .modal-footer, .modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent .modal-body, .modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent .modal-body-fixed, .modal-dialog .modal-content.modal-extended.modal-extended-semi-transparent .modal-footer {
@@ -10759,10 +10771,10 @@ body.modal-open .modal {
     .mouse-hover .modal-dialog .modal-content:hover.modal-minimized.modal-minimized-clickable .modal-body.modal-body-semi-transparent, .mouse-hover .modal-dialog .modal-content:hover.modal-minimized.modal-minimized-clickable .modal-body-fixed.modal-body-semi-transparent, .mouse-hover .modal-dialog .modal-content:hover.modal-normal.modal-normal-clickable .modal-body.modal-body-semi-transparent, .mouse-hover .modal-dialog .modal-content:hover.modal-normal.modal-normal-clickable .modal-body-fixed.modal-body-semi-transparent, .mouse-hover .modal-dialog .modal-content:hover.modal-extended.modal-extended-clickable .modal-body.modal-body-semi-transparent, .mouse-hover .modal-dialog .modal-content:hover.modal-extended.modal-extended-clickable .modal-body-fixed.modal-body-semi-transparent {
       background: rgba(255, 255, 255, 0.75); }
   .modal-dialog.modal-dialog-sm .modal-content .modal-header {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.1875rem 0.25rem;
     font-size: 0.75rem;
     line-height: 1.5;
@@ -10782,10 +10794,10 @@ body.modal-open .modal {
     padding: 0.1875rem 0.25rem;
     font-size: 0.875rem; }
   .modal-dialog.modal-dialog-sm .modal-content .modal-footer-header {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.1875rem 0.25rem;
     font-size: 0.75rem;
     line-height: 1.5;
@@ -10806,12 +10818,12 @@ body.modal-open .modal {
     .modal-dialog.modal-dialog-sm .modal-content .modal-footer-header:empty {
       display: none !important; }
   .modal-dialog.modal-dialog-xs .modal-content .modal-header {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.125rem 0.1875rem;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     line-height: 1.5;
     border-radius: inherit;
     border-bottom: 1px solid #9aa1a8;
@@ -10829,12 +10841,12 @@ body.modal-open .modal {
     padding: 0.125rem 0.1875rem;
     font-size: 0.75rem; }
   .modal-dialog.modal-dialog-xs .modal-content .modal-footer-header {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
-    padding: 0.1875rem 0.25rem;
-    font-size: 0.75rem;
+    font-weight: 400;
+    padding: 0.125rem 0.1875rem;
+    font-size: 0.6875rem;
     line-height: 1.5;
     border-radius: inherit;
     color: #495057;
@@ -10900,12 +10912,12 @@ Style for elements used to display any file in a modal-window
   border: 0; }
 
 .file-view-header {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.125rem 0.1875rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   border-radius: inherit;
   border-bottom: 1px solid #9aa1a8;
@@ -11124,14 +11136,14 @@ form.form-validation .form-group {
       vertical-align: top; }
   form.form-validation .form-group.form-group-xs {
     padding-top: 0.125rem;
-    padding-bottom: 1rem; }
+    padding-bottom: 0.9375rem; }
     form.form-validation .form-group.form-group-xs.has-warning {
       padding-bottom: 0px; }
     form.form-validation .form-group.form-group-xs.no-validation {
       padding-bottom: 0.125rem; }
     form.form-validation .form-group.form-group-xs .form-control-feedback {
-      height: 1rem;
-      font-size: 0.75rem;
+      height: 0.9375rem;
+      font-size: 0.6875rem;
       color: #dc3545;
       padding-left: 0.1875rem;
       vertical-align: top; }
@@ -11384,10 +11396,10 @@ Adjustmernt to Bootstrap table
     width: inherit !important; }
   .table thead tr th {
     display: table-cell !important;
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 1rem;
     line-height: 1.5;
@@ -11489,10 +11501,10 @@ Adjust header and cell size when table is sm/xs or inside a sm/xs modal
 **************************************/
 .table.table-sm thead tr th,
 .modal-dialog-sm .table thead tr th {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -11514,12 +11526,12 @@ Adjust header and cell size when table is sm/xs or inside a sm/xs modal
 
 .table.table-xs thead tr th,
 .modal-dialog-xs .table thead tr th {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.125rem 0.1875rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   border-radius: inherit; }
   .table.table-xs thead tr th span,
@@ -11563,10 +11575,10 @@ Using Bootstrap Collapse to create accordion
   .accordion .card.show {
     border-color: #6c757d !important; }
   .accordion .card-header {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 1rem;
     line-height: 1.5;
@@ -11615,10 +11627,10 @@ Using Bootstrap Collapse to create accordion
     font-size: 0.875rem;
     border-radius: 0.25rem; }
   .accordion .card-footer {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -11658,10 +11670,10 @@ Using Bootstrap Collapse to create accordion
       border-top-right-radius: 0; }
 
 .modal-dialog-sm .accordion .card-header, .accordion-sm .card-header {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -11679,10 +11691,10 @@ Using Bootstrap Collapse to create accordion
   font-size: 0.875rem; }
 
 .modal-dialog-sm .accordion .card-footer, .accordion-sm .card-footer {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -11704,12 +11716,12 @@ Using Bootstrap Collapse to create accordion
     display: none !important; }
 
 .modal-dialog-xs .accordion .card-header, .accordion-xs .card-header {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.125rem 0.1875rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   border-radius: inherit; }
   .modal-dialog-xs .accordion .card-header span, .accordion-xs .card-header span {
@@ -11725,12 +11737,12 @@ Using Bootstrap Collapse to create accordion
   font-size: 0.75rem; }
 
 .modal-dialog-xs .accordion .card-footer, .accordion-xs .card-footer {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
-  padding: 0.1875rem 0.25rem;
-  font-size: 0.75rem;
+  font-weight: 400;
+  padding: 0.125rem 0.1875rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   border-radius: inherit;
   color: #495057;
@@ -11868,10 +11880,10 @@ for noty is copyed and modified
   .noty_bar .noty-header {
     color: #495057;
     background-color: #f2f2f2;
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -11887,10 +11899,10 @@ for noty is copyed and modified
       overflow: visible;
       word-break: keep-all; }
     .noty_bar .noty-header.noty-header-sm {
-      font-weight: 400;
       display: flex;
       align-items: center;
       cursor: default;
+      font-weight: 400;
       padding: 0.1875rem 0.25rem;
       font-size: 0.75rem;
       line-height: 1.5;
@@ -11911,10 +11923,10 @@ for noty is copyed and modified
     padding: 0;
     margin: 0.25rem 0; }
   .noty_bar .noty-footer {
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.1875rem 0.25rem;
     font-size: 0.75rem;
     line-height: 1.5;
@@ -12177,18 +12189,18 @@ Adjustment to Bootstrap tabs
       width: 0.5rem;
       right: -0.375rem; }
   .nav-tabs.nav-tabs-xs a.nav-item.nav-link {
-    padding: 0.1875rem 0.25rem;
+    padding: 0.125rem 0.1875rem;
     font-size: 0.75rem;
     line-height: 1.5;
     border-radius: 0.125rem;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px; }
     .nav-tabs.nav-tabs-xs a.nav-item.nav-link {
-      margin-right: 0.375rem; }
+      margin-right: 0.28125rem; }
     .nav-tabs.nav-tabs-xs a.nav-item.nav-link:after {
-      border-top-right-radius: 0.5rem;
-      width: 0.5rem;
-      right: -0.375rem; }
+      border-top-right-radius: 0.375rem;
+      width: 0.375rem;
+      right: -0.25rem; }
 
 .tab-content .tab-pane.active {
   display: flex;
@@ -12209,10 +12221,10 @@ Adjustment to Bootstrap tabs
   .tab-content .tab-pane.active .tab-footer {
     flex-shrink: 0;
     flex-grow: 0;
-    font-weight: 400;
     display: flex;
     align-items: center;
     cursor: default;
+    font-weight: 400;
     padding: 0.25rem 0.3125rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -12236,10 +12248,10 @@ Adjustment to Bootstrap tabs
       display: none; }
 
 .tab-content.tab-content-sm .tab-pane .tab-footer {
-  font-weight: 400;
   display: flex;
   align-items: center;
   cursor: default;
+  font-weight: 400;
   padding: 0.1875rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -26893,7 +26905,6 @@ Adjust font-size and top for .inner to fit inside a fa-map-marker icon
 }
 
 /*# sourceMappingURL=bootstrap-slider.css.map */
-@charset "UTF-8";
 /***********************************************
 	leaflet-bootstrap.scss,
 
@@ -26930,13 +26941,22 @@ in integer px from rem
 /*Not used. No lg-buttons
 $input-btn-padding-y-lg: .75rem;
 $input-btn-padding-x-lg: $input-btn-padding-y-lg;
-*/
-/* VERSION 1.x
-//$font-size-sm = .875rem; // = 14px
-$font-size-sm: rem(13px); //<= TODO MANGLER. Skal muligvis sættes til 14px og så skal padding for buttons rettes tilsvarrende
 
-$input-btn-padding-y-sm: rem(4px);
-$input-btn-padding-x-sm: $input-btn-padding-y-sm;
+Syntax and relations:
+In Bootstrap
+    $input-btn-padding(-x|-y)[-sm|-lg]
+    $btn-padding(-x|-y)[-sm|-lg] = $input-btn-padding(-x|-y)[-sm|-lg]
+
+
+
+In jquery-bootstrap
+    $input-btn-padding-x-sm = 3px
+    $input-btn-padding-y-sm = 4px
+
+    xs-versions added
+    $input-btn-padding-x-xs = 2px
+    $input-btn-padding-y-xs = 3px
+
 */
 /************************************************************
 Including "size" xs as in Bootstrap 4
@@ -26955,6 +26975,9 @@ releative to container (rem -> em)
 $font-size-base         : 1rem !default;
 $spacer                 : 1rem !default;
 */
+/************************************************************
+Set margin for buttons in block
+************************************************************/
 /************************************************************
 Adjust dropdown-menu
 ************************************************************/
@@ -27168,7 +27191,7 @@ leaflet-bootstrap-popup.scss,
 leaflet-bootstrap-tooltip.scss,
 ************************************************/
 .leaflet-tooltip {
-  padding: 0.1875rem 0.25rem;
+  padding: 0.125rem 0.1875rem;
   background-color: #fff;
   border: 1px solid #868e96;
   border-radius: 0.25rem;
@@ -27304,13 +27327,13 @@ leaflet-bootstrap-control-scale.scss
   margin-bottom: 0 !important; }
 
 .leaflet-bottom:not(.has-control-attribution-bs) .leaflet-button-box-scale {
-  min-height: calc(2.25rem + 10px); }
+  min-height: calc(2.125rem + 10px); }
 
 .leaflet-bottom:not(.has-control-attribution-bs) .leaflet-button-box-scale-sm {
   min-height: calc(1.8125rem + 10px); }
 
 .leaflet-bottom.has-control-attribution-bs .leaflet-button-box-scale {
-  min-height: calc(2.25rem + 13px); }
+  min-height: calc(2.125rem + 13px); }
 
 .leaflet-bottom.has-control-attribution-bs .leaflet-button-box-scale-sm {
   min-height: calc(1.8125rem + 13px); }

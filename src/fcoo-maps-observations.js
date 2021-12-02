@@ -49,7 +49,7 @@
                 text   : {da: 'Vis', en: 'Show'},
                 title  : {da: 'Vis seneste måling for alle synlige lokationer', en: 'Show latest measurement for all visible locations'},
                 class  : 'min-width',
-                onClick: this.openVisiblePopup,
+                onClick: this._button_onClick_openVisiblePopup,
                 context: this,
                 onlyShowWhenLayer: true
             },{
@@ -57,7 +57,7 @@
                 text   : {da: 'Skjul', en: 'Hide'},
                 title  : {da: 'Shjul boks for alle synlige lokationer', en: 'Hide box for all visible locations'},
                 class  : 'min-width',
-                onClick: this.closeVisiblePopup,
+                onClick: this._button_onClick_closeVisiblePopup,
                 context: this,
                 onlyShowWhenLayer: true
             }],
@@ -93,16 +93,24 @@
             return this.observationGroup.observations;
         },
 
-        openVisiblePopup: function(id, map){
+
+
+        openVisiblePopup: function(map){
             this.workingOn();
             this.observations().openVisiblePopup(this.observationGroup.id, map);
             this.workingOff();
         },
+        _button_onClick_openVisiblePopup: function(id, selected, $button, map){
+            this.openVisiblePopup(map);
+        },
 
 
-        closeVisiblePopup: function(id, map){
+        closeVisiblePopup: function(map){
             this.observations().closeVisiblePopup(this.observationGroup.id, map);
-        }
+        },
+        _button_onClick_closeVisiblePopup: function(id, selected, $button, map){
+            this.closeVisiblePopup(map);
+        },
 
     });
 
