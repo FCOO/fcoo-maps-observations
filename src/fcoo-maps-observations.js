@@ -37,8 +37,9 @@
         var obsGroup =  this.observationGroup = options.observationGroup;
 
         nsMap.MapLayer.call(this, $.extend({
-            icon: obsGroup.faIcon,
-            text: obsGroup.name,
+            icon      : obsGroup.faIcon,
+            legendIcon: obsGroup.faIconPopup,
+            text      : obsGroup.name,
 
             createMarkerPane: true,
             paneId          : observationId,
@@ -130,7 +131,7 @@
                         nsMap._addMapLayer(
                             observationId + '_' + observationGroup.id,
                             nsMap.MapLayer_Observations,
-                            {observationGroup: observationGroup, NIELS:'Holt'}
+                            {observationGroup: observationGroup}
                         );
                 menuList.push( mapLayer.menuItemOptions() );
             });
