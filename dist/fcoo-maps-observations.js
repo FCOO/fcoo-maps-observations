@@ -35,7 +35,6 @@
     ***********************************************************/
     function MapLayer_Observations(options) {
         var obsGroup =  this.observationGroup = options.observationGroup;
-
         nsMap.MapLayer.call(this, $.extend({
             icon      : obsGroup.faIcon,
             legendIcon: obsGroup.faIconPopup,
