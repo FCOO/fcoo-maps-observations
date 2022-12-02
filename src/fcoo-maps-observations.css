@@ -48,6 +48,7 @@ See https://getbootstrap.com/docs/5.2/customize/options/ for description
 ************************************************/
 /**/
 /**/
+/**/
 /***********************************************
 OPACITY
 ************************************************/
@@ -160,6 +161,11 @@ Adjust modal
 jquery-scroll-container-variables.scss
 
 ************************************************/
+:root {
+  --jsc-scroll-size: 10px;
+  --jsc-scroll-padding: 10px;
+  --jsc-scroll-auto-padding: 10px; }
+
 /************************************************************
 VARIABLES
 

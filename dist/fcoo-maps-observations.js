@@ -118,7 +118,7 @@
     /***********************************************************
     Add MapLayer_Observations to createMapLayer
     ***********************************************************/
-    nsMap.createMapLayer[observationId] = function(options, addMenu){
+    nsMap.createMapLayer[observationId] = function(options, addMenu, adjustParentMenuOptions){
         //Create a FCOOObservations
         var fcooObservation = new ns.FCOOObservations(fcooObservationOptions);
 
@@ -136,6 +136,9 @@
             });
             addMenu( menuList );
         }});
+
+        adjustParentMenuOptions({icon: {colorName:'observations', round: false}});
+
     };
 
 }(jQuery, L, this, document));
