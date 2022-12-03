@@ -45,7 +45,7 @@
             minZoom         : 6,
 
             buttonList: [{
-                icon   : 'fai fai-label-center',
+                icon   : 'far fa-message-middle',
                 text   : {da: 'Vis', en: 'Show'},
                 title  : {da: 'Vis seneste måling for alle synlige lokationer', en: 'Show latest measurement for all visible locations'},
                 class  : 'min-width',
@@ -53,7 +53,7 @@
                 context: this,
                 onlyShowWhenLayer: true
             },{
-                icon   : [['fai fai-label-center', 'far fa-slash']],
+                icon   : [['far fa-message-middle', 'far fa-slash']],
                 text   : {da: 'Skjul', en: 'Hide'},
                 title  : {da: 'Shjul boks for alle synlige lokationer', en: 'Hide box for all visible locations'},
                 class  : 'min-width',
