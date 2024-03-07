@@ -24,6 +24,9 @@
     <script src="../src/fcoo-maps-observations.js"></script>
 
     <script>
+        //TEMP: No access to data-files on AWS. Read from old location instead 
+        window.fcoo.path.setPath({host: 'bal.fcoo.dk'});
+    
         window.fcoo.map.createApplication(
             //options
             {
