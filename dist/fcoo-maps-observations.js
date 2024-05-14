@@ -17,8 +17,13 @@
         observationId = 'OBSERVATIONS',
 
         fcooObservationOptions = {
-            locationFileName        : 'locations.json',
-            fileName                : ['observations-sealevel.json', 'observations-current.json'/*, 'observations-wind.json'*/],
+            locationFileName: 'locations.json',
+            fileName        : [
+                'observations-sealevel.json',
+                // 'observations-wind_TEST.json',
+                'observations-current-surface.json',
+                'observations-current-seafloor.json'
+            ],
             lastObservationFileName : 'LastObservations_SEALVL.json LastObservations_CURRENT.json',
             geoJSONOptions: {
                 pane: nsMap.getMarkerPaneName(observationId)
@@ -37,6 +42,7 @@
         var obsGroup =  this.observationGroup = options.observationGroup;
         nsMap.MapLayer.call(this, $.extend({
             icon      : obsGroup.faIcon,
+            iconClass : 'obs-group-icon-container',
             legendIcon: obsGroup.faIconPopup,
             text      : obsGroup.name,
 
