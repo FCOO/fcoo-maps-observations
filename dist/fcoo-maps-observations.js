@@ -12,6 +12,7 @@
 
     //Create namespaces
     var ns = window.fcoo = window.fcoo || {},
+        nsObservations = ns.observations = ns.observations || {},
         nsMap = ns.map = ns.map || {},
 
         observationId = 'OBSERVATIONS',
@@ -125,13 +126,9 @@
     Add MapLayer_Observations to createMapLayer
     ***********************************************************/
     nsMap.createMapLayer[observationId] = function(options, addMenu, adjustParentMenuOptions){
-        //Create a FCOOObservations
-        var fcooObservation = new ns.FCOOObservations(fcooObservationOptions);
-
-        //When all setups files are read => Create the layer and menu
-        ns.promiseList.append({data: ' ', resolve: function(){
-            var menuList = [];
-            $.each(fcooObservation.observationGroupList, function(index, observationGroup){
+        nsObservations.getFCOOObservations( function( fcooObservations ){
+            let menuList = [];
+            $.each(fcooObservations.observationGroupList, function(index, observationGroup){
                 var mapLayer =
                         nsMap._addMapLayer(
                             observationId + '_' + observationGroup.id,
@@ -141,7 +138,7 @@
                 menuList.push( mapLayer.menuItemOptions() );
             });
             addMenu( menuList );
-        }});
+        }, fcooObservationOptions);
 
         adjustParentMenuOptions({icon: {colorName:'observations', round: false}});
 
