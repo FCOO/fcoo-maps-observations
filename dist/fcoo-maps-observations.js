@@ -18,8 +18,8 @@
         observationId = 'OBSERVATIONS',
 
         fcooObservationOptions = {
-            locationFileName: 'locations.json',
-            fileName        : [
+            _locationFileName: 'locations.json',
+            _fileName        : [
                 'observations-sealevel.json',
                 // 'observations-wind_TEST.json',
                 'observations-current-surface.json',
@@ -128,8 +128,8 @@
     nsMap.createMapLayer[observationId] = function(options, addMenu, adjustParentMenuOptions){
         nsObservations.getFCOOObservations( function( fcooObservations ){
             let menuList = [];
-            $.each(fcooObservations.observationGroupList, function(index, observationGroup){
-                var mapLayer =
+            fcooObservations.observationGroupList.forEach(observationGroup => {
+                let mapLayer =
                         nsMap._addMapLayer(
                             observationId + '_' + observationGroup.id,
                             nsMap.MapLayer_Observations,
@@ -138,7 +138,7 @@
                 menuList.push( mapLayer.menuItemOptions() );
             });
             addMenu( menuList );
-        }, fcooObservationOptions);
+        }, false, fcooObservationOptions);
 
         adjustParentMenuOptions({icon: {colorName:'observations', round: false}});
 
