@@ -42,8 +42,10 @@
     function MapLayer_Observations(options) {
         var obsGroup =  this.observationGroup = options.observationGroup;
         nsMap.MapLayer.call(this, $.extend({
-            icon      : obsGroup.faIcon,
-            iconClass : 'obs-group-icon-container',
+            icon      : obsGroup.options.icon,
+            iconClass : obsGroup.options.iconClass,
+
+
             legendIcon: obsGroup.faIconPopup,
             text      : obsGroup.name,
 
@@ -125,23 +127,19 @@
     /***********************************************************
     Add MapLayer_Observations to createMapLayer
     ***********************************************************/
-    nsMap.createMapLayer[observationId] = function(options, addMenu, adjustParentMenuOptions){
+    nsMap.createMapLayer[observationId] = function(options, addMenu){
         nsObservations.getFCOOObservations( function( fcooObservations ){
             let menuList = [];
             fcooObservations.observationGroupList.forEach(observationGroup => {
-                let mapLayer =
-                        nsMap._addMapLayer(
-                            observationId + '_' + observationGroup.id,
-                            nsMap.MapLayer_Observations,
-                            {observationGroup: observationGroup}
-                        );
+                let mapLayer = nsMap._addMapLayer(
+                        observationId + '_' + observationGroup.id,
+                        nsMap.MapLayer_Observations,
+                        {observationGroup: observationGroup}
+                    );
                 menuList.push( mapLayer.menuItemOptions() );
             });
             addMenu( menuList );
         }, false, fcooObservationOptions);
-
-        adjustParentMenuOptions({icon: {colorName:'observations', round: false}});
-
     };
 
 }(jQuery, L, this, document));
