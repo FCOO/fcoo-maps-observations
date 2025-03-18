@@ -18,14 +18,6 @@
         observationId = 'OBSERVATIONS',
 
         fcooObservationOptions = {
-            _locationFileName: 'locations.json',
-            _fileName        : [
-                'observations-sealevel.json',
-                // 'observations-wind_TEST.json',
-                'observations-current-surface.json',
-                'observations-current-seafloor.json'
-            ],
-            lastObservationFileName : 'LastObservations_SEALVL.json LastObservations_CURRENT.json',
             geoJSONOptions: {
                 pane: nsMap.getMarkerPaneName(observationId)
             }
@@ -53,7 +45,7 @@ class: 'HEJ-MED-DIG', // = (buttonOptions.class || '') + ' ' + _this.showAndHide
                 onlyShowWhenLayer: true
     }]
 },
-*/
+//*/
             legendIcon: obsGroup.faIconPopup,
             text      : obsGroup.name,
 
@@ -109,8 +101,6 @@ class: 'HEJ-MED-DIG', // = (buttonOptions.class || '') + ' ' + _this.showAndHide
         observations: function(){
             return this.observationGroup.observations;
         },
-
-
 
         openVisiblePopup: function(map){
             this.workingOn();

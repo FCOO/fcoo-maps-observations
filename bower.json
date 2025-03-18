@@ -1,6 +1,6 @@
 {
   "name": "fcoo-maps-observations",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "homepage": "https://github.com/FCOO/fcoo-maps-observations",
   "authors": [
     "Niels Holt"
@@ -19,7 +19,7 @@
     "fcoo-maps": "fcoo/fcoo-maps#latest"
   },
   "overrides": {
-    "fcoo-observations": {
+    "_fcoo-observations": {
       "main": "dist/fcoo-observations.js"
     }
   },
