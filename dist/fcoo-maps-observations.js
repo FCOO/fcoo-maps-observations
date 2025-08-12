@@ -39,8 +39,8 @@
 
             menuOptions: {
                 useLegendButtonList: true,
-                buttonListMode     : "selectedMaps"                    
-            },        
+                buttonListMode     : "selectedMaps"
+            },
 
             legendIcon: obsGroup.faIconPopup,
             text      : obsGroup.name,
@@ -132,7 +132,9 @@
                     );
                 menuList.push( mapLayer.menuItemOptions() );
             });
+
             addMenu( menuList );
+
         }, false, fcooObservationOptions);
     };
 

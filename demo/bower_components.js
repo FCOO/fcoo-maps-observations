@@ -27113,7 +27113,7 @@ else {
 
 ;
 /*!
-  * Bootstrap v5.3.5 (https://getbootstrap.com/)
+  * Bootstrap v5.3.7 (https://getbootstrap.com/)
   * Copyright 2011-2025 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
   */
@@ -27761,7 +27761,7 @@ else {
    * Constants
    */
 
-  const VERSION = '5.3.5';
+  const VERSION = '5.3.7';
 
   /**
    * Class definition
@@ -27787,6 +27787,8 @@ else {
         this[propertyName] = null;
       }
     }
+
+    // Private
     _queueCallback(callback, element, isAnimated = true) {
       executeAfterTransition(callback, element, isAnimated);
     }
@@ -28718,11 +28720,11 @@ else {
       this._element.style[dimension] = '';
       this._queueCallback(complete, this._element, true);
     }
+
+    // Private
     _isShown(element = this._element) {
       return element.classList.contains(CLASS_NAME_SHOW$7);
     }
-
-    // Private
     _configAfterMerge(config) {
       config.toggle = Boolean(config.toggle); // Coerce string values
       config.parent = getElement(config.parent);
@@ -30802,6 +30804,9 @@ else {
       this._element.setAttribute('aria-expanded', 'false');
       Manipulator.removeDataAttribute(this._menu, 'popper');
       EventHandler.trigger(this._element, EVENT_HIDDEN$5, relatedTarget);
+
+      // Explicitly return focus to the trigger element
+      this._element.focus();
     }
     _getConfig(config) {
       config = super._getConfig(config);
@@ -31914,7 +31919,6 @@ else {
    *
    * Shout-out to Angular https://github.com/angular/angular/blob/15.2.8/packages/core/src/sanitization/url_sanitizer.ts#L38
    */
-  // eslint-disable-next-line unicorn/better-regex
   const SAFE_URL_PATTERN = /^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|$))/i;
   const allowedAttribute = (attribute, allowedAttributeList) => {
     const attributeName = attribute.nodeName.toLowerCase();
@@ -32458,6 +32462,7 @@ else {
         if (trigger === 'click') {
           EventHandler.on(this._element, this.constructor.eventName(EVENT_CLICK$1), this._config.selector, event => {
             const context = this._initializeOnDelegatedTarget(event);
+            context._activeTrigger[TRIGGER_CLICK] = !(context._isShown() && context._activeTrigger[TRIGGER_CLICK]);
             context.toggle();
           });
         } else if (trigger !== TRIGGER_MANUAL) {
@@ -33323,7 +33328,6 @@ else {
     }
 
     // Private
-
     _maybeScheduleHide() {
       if (!this._config.autohide) {
         return;
@@ -34103,12 +34107,11 @@ else {
   }
 
   /*!
-   * GSAP 3.12.7
+   * GSAP 3.13.0
    * https://gsap.com
    *
    * @license Copyright 2008-2025, GreenSock. All rights reserved.
-   * Subject to the terms at https://gsap.com/standard-license or for
-   * Club GSAP members, the agreement issued with that membership.
+   * Subject to the terms at https://gsap.com/standard-license
    * @author: Jack Doyle, jack@greensock.com
   */
   var _config = {
@@ -34276,9 +34279,12 @@ else {
       tween && tween._lazy && (tween.render(tween._lazy[0], tween._lazy[1], true)._lazy = 0);
     }
   },
+      _isRevertWorthy = function _isRevertWorthy(animation) {
+    return !!(animation._initted || animation._startAt || animation.add);
+  },
       _lazySafeRender = function _lazySafeRender(animation, time, suppressEvents, force) {
     _lazyTweens.length && !_reverting && _lazyRender();
-    animation.render(time, suppressEvents, force || _reverting && time < 0 && (animation._initted || animation._startAt));
+    animation.render(time, suppressEvents, force || !!(_reverting && time < 0 && _isRevertWorthy(animation)));
     _lazyTweens.length && !_reverting && _lazyRender();
   },
       _numericIfPossible = function _numericIfPossible(value) {
@@ -35736,7 +35742,7 @@ else {
       var tTime = this.parent && this._ts ? _parentToChildTotalTime(this.parent._time, this) : this._tTime;
       this._rts = +value || 0;
       this._ts = this._ps || value === -_tinyNum ? 0 : this._rts;
-      this.totalTime(_clamp(-Math.abs(this._delay), this._tDur, tTime), suppressEvents !== false);
+      this.totalTime(_clamp(-Math.abs(this._delay), this.totalDuration(), tTime), suppressEvents !== false);
 
       _setEnd(this);
 
@@ -35793,7 +35799,7 @@ else {
       var prevIsReverting = _reverting;
       _reverting = config;
 
-      if (this._initted || this._startAt) {
+      if (_isRevertWorthy(this)) {
         this.timeline && this.timeline.revert(config);
         this.totalTime(-0.01, config.suppressEvents);
       }
@@ -36163,7 +36169,7 @@ else {
           prevTime = 0;
         }
 
-        if (!prevTime && time && !suppressEvents && !iteration) {
+        if (!prevTime && tTime && !suppressEvents && !prevIteration) {
           _callback(this, "onStart");
 
           if (this._tTime !== tTime) {
@@ -36205,7 +36211,7 @@ else {
                 return this.render(totalTime, suppressEvents, force);
               }
 
-              child.render(child._ts > 0 ? (adjustedTime - child._start) * child._ts : (child._dirty ? child.totalDuration() : child._tDur) + (adjustedTime - child._start) * child._ts, suppressEvents, force || _reverting && (child._initted || child._startAt));
+              child.render(child._ts > 0 ? (adjustedTime - child._start) * child._ts : (child._dirty ? child.totalDuration() : child._tDur) + (adjustedTime - child._start) * child._ts, suppressEvents, force || _reverting && _isRevertWorthy(child));
 
               if (time !== this._time || !this._ts && !prevPaused) {
                 pauseTween = 0;
@@ -37284,7 +37290,7 @@ else {
           this.ratio = ratio = 1 - ratio;
         }
 
-        if (time && !prevTime && !suppressEvents && !iteration) {
+        if (!prevTime && tTime && !suppressEvents && !prevIteration) {
           _callback(this, "onStart");
 
           if (this._tTime !== tTime) {
@@ -38168,6 +38174,7 @@ else {
       _buildModifierPlugin = function _buildModifierPlugin(name, modifier) {
     return {
       name: name,
+      headless: 1,
       rawVars: 1,
       init: function init(target, vars, tween) {
         tween._onInit = function (tween) {
@@ -38224,6 +38231,7 @@ else {
     }
   }, {
     name: "endArray",
+    headless: 1,
     init: function init(target, value) {
       var i = value.length;
 
@@ -38232,7 +38240,7 @@ else {
       }
     }
   }, _buildModifierPlugin("roundProps", _roundModifier), _buildModifierPlugin("modifiers"), _buildModifierPlugin("snap", snap)) || _gsap;
-  Tween.version = Timeline.version = gsap.version = "3.12.7";
+  Tween.version = Timeline.version = gsap.version = "3.13.0";
   _coreReady = 1;
   _windowExists() && _wake();
   var Power0 = _easeMap.Power0,
@@ -38677,6 +38685,10 @@ else {
     pt.e = end;
     start += "";
     end += "";
+
+    if (end.substring(0, 6) === "var(--") {
+      end = _getComputedProperty(target, end.substring(4, end.indexOf(")")));
+    }
 
     if (end === "auto") {
       startValue = target.style[prop];
@@ -39532,6 +39544,11 @@ else {
 
           if (isTransformRelated) {
             this.styles.save(p);
+
+            if (type === "string" && endValue.substring(0, 6) === "var(--") {
+              endValue = _getComputedProperty(target, endValue.substring(4, endValue.indexOf(")")));
+              endNum = parseFloat(endValue);
+            }
 
             if (!transformPropTween) {
               cache = target._gsap;
@@ -60663,6 +60680,9 @@ module.exports = Yaml;
                     result
                         .then( function(response) { return response.text(); })
                         .then( parseXML );
+
+                if (options.asJSON)
+                    result = result.then( function(xml){ return window.xmlToJSON(xml); });
                 break;
         }
 
@@ -60726,6 +60746,186 @@ module.exports = Yaml;
     };
 
 }(jQuery, this, Promise, document));
+
+
+;
+/****************************************************************************
+This work is licensed under Creative Commons GNU LGPL License.
+
+License: http://creativecommons.org/licenses/LGPL/2.1/
+Version: 0.9
+Author:  Stefan Goessner/2006
+Web:     http://goessner.net/
+****************************************************************************/
+
+(function (window /*, document, undefined*/) {
+    "use strict";
+
+function xml2json(xml, tab) {
+   var X = {
+      toObj: function(xml) {
+         var o = {}, n;
+         if (xml.nodeType==1) {   // element node ..
+            if (xml.attributes.length)   // element with attributes  ..
+               for (var i=0; i<xml.attributes.length; i++)
+                  o["@"+xml.attributes[i].nodeName] = (xml.attributes[i].nodeValue||"").toString();
+            if (xml.firstChild) { // element has child nodes ..
+               var textChild=0, cdataChild=0, hasElementChild=false;
+               for (n=xml.firstChild; n; n=n.nextSibling) {
+                  if (n.nodeType==1) hasElementChild = true;
+                  else if (n.nodeType==3 && n.nodeValue.match(/[^ \f\n\r\t\v]/)) textChild++; // non-whitespace text
+                  else if (n.nodeType==4) cdataChild++; // cdata section node
+               }
+               if (hasElementChild) {
+                  if (textChild < 2 && cdataChild < 2) { // structured element with evtl. a single text or/and cdata node ..
+                     X.removeWhite(xml);
+                     for (n=xml.firstChild; n; n=n.nextSibling) {
+                        if (n.nodeType == 3)  // text node
+                           o["#text"] = X.escape(n.nodeValue);
+                        else if (n.nodeType == 4)  // cdata node
+                           o["#cdata"] = X.escape(n.nodeValue);
+                        else if (o[n.nodeName]) {  // multiple occurence of element ..
+                           if (o[n.nodeName] instanceof Array)
+                              o[n.nodeName][o[n.nodeName].length] = X.toObj(n);
+                           else
+                              o[n.nodeName] = [o[n.nodeName], X.toObj(n)];
+                        }
+                        else  // first occurence of element..
+                           o[n.nodeName] = X.toObj(n);
+                     }
+                  }
+                  else { // mixed content
+                     if (!xml.attributes.length)
+                        o = X.escape(X.innerXml(xml));
+                     else
+                        o["#text"] = X.escape(X.innerXml(xml));
+                  }
+               }
+               else if (textChild) { // pure text
+                  if (!xml.attributes.length)
+                     o = X.escape(X.innerXml(xml));
+                  else
+                     o["#text"] = X.escape(X.innerXml(xml));
+               }
+               else if (cdataChild) { // cdata
+                  if (cdataChild > 1)
+                     o = X.escape(X.innerXml(xml));
+                  else
+                     for (n=xml.firstChild; n; n=n.nextSibling)
+                        o["#cdata"] = X.escape(n.nodeValue);
+               }
+            }
+            if (!xml.attributes.length && !xml.firstChild) o = null;
+         }
+         else if (xml.nodeType==9) { // document.node
+            o = X.toObj(xml.documentElement);
+         }
+         else
+            alert("unhandled node type: " + xml.nodeType);
+         return o;
+      },
+      toJson: function(o, name, ind) {
+         var json = name ? ("\""+name+"\"") : "";
+         if (o instanceof Array) {
+            for (var i=0,n=o.length; i<n; i++)
+               o[i] = X.toJson(o[i], "", ind+"\t");
+            json += (name?":[":"[") + (o.length > 1 ? ("\n"+ind+"\t"+o.join(",\n"+ind+"\t")+"\n"+ind) : o.join("")) + "]";
+         }
+         else if (o == null)
+            json += (name&&":") + "null";
+         else if (typeof(o) == "object") {
+            var arr = [];
+            for (var m in o)
+               arr[arr.length] = X.toJson(o[m], m, ind+"\t");
+            json += (name?":{":"{") + (arr.length > 1 ? ("\n"+ind+"\t"+arr.join(",\n"+ind+"\t")+"\n"+ind) : arr.join("")) + "}";
+         }
+         else if (typeof(o) == "string")
+            json += (name&&":") + "\"" + o.toString() + "\"";
+         else
+            json += (name&&":") + o.toString();
+         return json;
+      },
+      innerXml: function(node) {
+         var s = "";
+         if ("innerHTML" in node)
+            s = node.innerHTML;
+         else {
+            var asXml = function(n) {
+               var s = "";
+               if (n.nodeType == 1) {
+                  s += "<" + n.nodeName;
+                  for (var i=0; i<n.attributes.length;i++)
+                     s += " " + n.attributes[i].nodeName + "=\"" + (n.attributes[i].nodeValue||"").toString() + "\"";
+                  if (n.firstChild) {
+                     s += ">";
+                     for (var c=n.firstChild; c; c=c.nextSibling)
+                        s += asXml(c);
+                     s += "</"+n.nodeName+">";
+                  }
+                  else
+                     s += "/>";
+               }
+               else if (n.nodeType == 3)
+                  s += n.nodeValue;
+               else if (n.nodeType == 4)
+                  s += "<![CDATA[" + n.nodeValue + "]]>";
+               return s;
+            };
+            for (var c=node.firstChild; c; c=c.nextSibling)
+               s += asXml(c);
+         }
+         return s;
+      },
+      escape: function(txt) {
+         return txt.replace(/[\\]/g, "\\\\")
+                   .replace(/["]/g, '\\"')
+                   .replace(/[\n]/g, '\\n')
+                   .replace(/[\r]/g, '\\r');
+      },
+      removeWhite: function(e) {
+         e.normalize();
+         for (var n = e.firstChild; n; ) {
+            if (n.nodeType == 3) {  // text node
+               if (!n.nodeValue.match(/[^ \f\n\r\t\v]/)) { // pure whitespace text node
+                  var nxt = n.nextSibling;
+                  e.removeChild(n);
+                  n = nxt;
+               }
+               else
+                  n = n.nextSibling;
+            }
+            else if (n.nodeType == 1) {  // element node
+               X.removeWhite(n);
+               n = n.nextSibling;
+            }
+            else                      // any other node
+               n = n.nextSibling;
+         }
+         return e;
+      }
+   };
+   if (xml.nodeType == 9) // document node
+      xml = xml.documentElement;
+   var json = X.toJson(X.toObj(X.removeWhite(xml)), xml.nodeName, "\t");
+   return "{\n" + tab + (tab ? json.replace(/\t/g, tab) : json.replace(/\t|\n/g, "")) + "\n}";
+}
+
+
+window.xmlToJSON = function(xml) {
+    let jsonStr = xml2json(xml, ''),
+        json    = null;
+
+    try {
+        json = JSON.parse(jsonStr);
+    }
+    catch (error){
+        json = null;
+    }
+    return json;
+};
+
+}(this, document));
+
 
 
 ;
@@ -77208,6 +77408,10 @@ module.exports = g;
             if (options.center)
                 $parent.addClass('justify-content-center text-center');
 
+            if (options.middle || options.verticalAlignMiddle)
+                $parent.addClass('align-items-center');
+
+
             $parent._bsAppendContent( options.append || options.after, options.contentContext, null, options  );
 
             return this;
@@ -77456,12 +77660,13 @@ module.exports = g;
     $.fn.bsAccordionStatus = function(){
         function getStatus($elem){
             var result = [];
-            $elem.children('.card').each( function(index, elem){
+            $elem.children('.accordion-item').each( function(index, elem){
                 var $elem = $(elem);
-                result[index] = $elem.hasClass('show') ? getStatus($elem.find('> .collapse > .card-block > .accordion')) : false;
+                result[index] = $elem.hasClass('show') ? getStatus($elem.find('> .collapse > .accordion-body > .accordion')) : false;
             });
             return result.length ? result : true;
         }
+
         return getStatus(this);
     };
 
@@ -80513,10 +80718,13 @@ jquery-bootstrap-modal-promise.js
 
         alwaysMaxHeight: BOOLEAN - If true the modal is always the full height of it parent
 
+        allowFullScreen: BOOLEAN - if true the largest size (normal or extended) gets the possibility to be displayed in full-screen
+        noReopenFullScreen: BOOLEAN - if false and allowFullScreen = true and the modal was in full-screen when closed => It will reopen in full-screen. If true the modal will reopen in prevoius size (minimized, normal or extended)
 
         innerHeight     : The fixed height of the content
         innerMaxHeight  : The fixed max-height of the content
 
+        fitWidth
         flexWidth
         extraWidth
         megaWidth
@@ -80552,6 +80760,10 @@ jquery-bootstrap-modal-promise.js
         closeText
         noCloseIconOnHeader
         historyList         - The modal gets backward and forward icons in header to go backward and forward in the historyList. See demo and https://github.com/fcoo/history.js
+
+        keepScrollWhenReopen: false, - if true the scrolling of the content is reused. If false all content starts at scroll 0,0 when shown
+
+
 
     **********************************************************/
     var modalId = 0,
@@ -80649,6 +80861,7 @@ jquery-bootstrap-modal-promise.js
     3: fixed height. options.height
 
     The width of a modal is by default 300px.
+    options.fitWidth  : If true the width of the modal is set by the with of the content
     options.flexWidth : If true the width of the modal will adjust to the width of the browser up to 500px
     options.extraWidth: Only when flexWidth is set: If true the width of the modal will adjust to the width of the browser up to 800px
     options.megaWidth : Only when flexWidth is set: If true the width of the modal will adjust to the width of the browser up to 1200px
@@ -80667,6 +80880,7 @@ jquery-bootstrap-modal-promise.js
 
     function getWidthFromOptions( options ){
         return {
+            fitWidth            : !!options.fitWidth,
             flexWidth           : !!options.flexWidth,
             extraWidth          : !!options.extraWidth,
             megaWidth           : !!options.megaWidth,
@@ -80710,7 +80924,6 @@ jquery-bootstrap-modal-promise.js
         if (currentModal)
             currentModal._bsModalCloseElements();
 
-
         openModals++;
         this.previousModal = currentModal;
         currentModal = this;
@@ -80753,8 +80966,8 @@ jquery-bootstrap-modal-promise.js
     function hide_bs_modal() {
         currentModal = this.previousModal;
 
-        //If in full.screen mode => reset back
-        if (this.bsModal.isFullScreenMode)
+        //If in full-screen mode and dont reopen in full-screen => reset back
+        if (this.bsModal.isFullScreenMode && this.bsModal.noReopenFullScreen)
             this._bsModalFullScreenOff();
 
         //Close elements
@@ -80766,6 +80979,10 @@ jquery-bootstrap-modal-promise.js
 
         //Remove all noty added on the modal and move down global backdrop
         $._bsNotyRemoveLayer();
+
+        //Call onHide
+        if (this.onHide)
+            this.onHide(this);
 
         //Remove the modal from DOM
         if (this.removeOnClose)
@@ -80824,13 +81041,23 @@ jquery-bootstrap-modal-promise.js
     ******************************************************/
     var bsModal_prototype = {
         show  : function(){
-                    this.modal('show');
+            this.modal('show');
 
-                    this.data('bsModalDialog')._bsModalSetHeightAndWidth();
+            this.data('bsModalDialog')._bsModalSetHeightAndWidth();
 
-                    if (this.bsModal.onChange)
-                        this.bsModal.onChange( this.bsModal );
-                },
+            if (this.bsModal.onChange)
+                this.bsModal.onChange( this.bsModal );
+
+            //Scroll all "body" back if keepScrollWhenReopen = false is set
+            if (!this.keepScrollWhenReopen)
+                ['', 'extended', 'minimized'].forEach( size => {
+                    let obj = size ? this.bsModal[size] : this.bsModal;
+                    if (obj && obj.$body){
+                        obj.$body.scrollTop(0);
+                        obj.$body.scrollLeft(0);
+                    }
+                }, this);
+        },
 
         _close: function(){
             this.modal('hide');
@@ -80889,7 +81116,6 @@ jquery-bootstrap-modal-promise.js
                 }
             }
             //***********************************************************
-
             //Update header
             var $iconContainer = this.bsModal.$header.find('.header-icon-container').detach();
             updateElement(this.bsModal.$header, options, '_bsHeaderAndIcons', $.BSMODAL_USE_SQUARE_ICONS);
@@ -80908,6 +81134,8 @@ jquery-bootstrap-modal-promise.js
                     updateElement(containers.$footer,       contentOptions.footer,       '_bsAddHtml' );
                 }
             }, this);
+
+
             return this;
         },
 
@@ -81136,7 +81364,8 @@ jquery-bootstrap-modal-promise.js
 
         function useNormalWidth(options = {}){
             return (options.width == true) ||
-                    (   (options.flexWidth == undefined) &&
+                    (   (options.fitWidth == undefined) &&
+                        (options.flexWidth == undefined) &&
                         (options.extraWidth == undefined) &&
                         (options.megaWidth == undefined) &&
                         (options.maxWidth == undefined) &&
@@ -81460,8 +81689,6 @@ jquery-bootstrap-modal-promise.js
             return;
         }
 
-
-
         //Set height
         $modalContent
             .toggleClass('modal-fixed-height', !!cssHeight)
@@ -81472,6 +81699,7 @@ jquery-bootstrap-modal-promise.js
 
         //Set width
         $modalDialog
+            .toggleClass('modal-fit-width'              , cssWidth.fitWidth             )
             .toggleClass('modal-flex-width'             , cssWidth.flexWidth            )
             .toggleClass('modal-extra-width'            , cssWidth.extraWidth           )
             .toggleClass('modal-mega-width'             , cssWidth.megaWidth            )
@@ -81480,6 +81708,12 @@ jquery-bootstrap-modal-promise.js
             .toggleClass('modal-full-screen'            , cssWidth.fullScreen           )
             .toggleClass('modal-full-screen-with-border', cssWidth.fullScreenWithBorder )
             .css('width', cssWidth.width ? cssWidth.width : '' );
+
+
+        if (this.bsModal.isFullScreenMode){
+            this._bsModalFullScreenOff();
+            this._bsModalFullScreenOn();
+        }
 
         //Call onChange (if any)
         if (bsModal.onChange)
@@ -81697,16 +81931,29 @@ jquery-bootstrap-modal-promise.js
         if (options.fullScreen || options.fullScreenWithBorder)
             options.allowFullScreen = false;
 
-        //Set options for full screen with border
-        if (options.fullScreenWithBorder)
-            options.fullScreen = true;
 
-        //Set options for full screen
-        if (options.fullScreen){
-            options.maxWidth             = true;
-            options.alwaysMaxHeight      = true;
-            options.relativeHeightOffset = 0;
+
+        function adjustFullScreenOptions( opt, defaultOpt={} ){
+            if (!opt) return;
+            ['fullScreenWithBorder', 'fullScreen'].forEach( id => {
+                if (opt[id] === undefined)
+                    opt[id] = defaultOpt[id] || false;
+            });
+            if (opt.fullScreenWithBorder)
+                opt.fullScreen = true;
+
+            //Set options for full screen
+            if (opt.fullScreen){
+                opt.maxWidth             = true;
+                opt.alwaysMaxHeight      = true;
+                opt.relativeHeightOffset = 0;
+            }
         }
+
+        //Set options for full screen with border
+        adjustFullScreenOptions(options);
+        adjustFullScreenOptions(options.minimized, options);
+        adjustFullScreenOptions(options.extended, options);
 
         //Check $.MODAL_NO_VERTICAL_MARGIN
         if ($.MODAL_NO_VERTICAL_MARGIN){
@@ -81733,6 +81980,10 @@ jquery-bootstrap-modal-promise.js
         //If allowFullScreen: Find the largest size-mode and set the differnet class-names etc.
         if (options.allowFullScreen)
             options.sizeWithFullScreen = options.extended ? MODAL_SIZE_EXTENDED : MODAL_SIZE_NORMAL;
+
+
+        //Set keepScrollWhenReopen to allow the content to be scrolled back to 0,0 when reopen a modal
+        this.keepScrollWhenReopen = options.keepScrollWhenReopen;
 
         //Create the modal
         $result =
@@ -81776,6 +82027,8 @@ jquery-bootstrap-modal-promise.js
 
         $result.onShow = options.onShow;
         $result.onClose = options.onClose;
+        $result.onHide = options.onHide;
+
 
         //Create as modal and adds methods - only allow close by esc for non-static modal (typical a non-form)
         new bootstrap.Modal($result, {
@@ -81814,6 +82067,10 @@ jquery-bootstrap-modal-promise.js
                 $result.show();
         }
 
+        //Save some options in bsModal
+        ['noReopenFullScreen'].forEach( id => {
+            $result.bsModal[id] = options[id];
+        });
 
         return $result;
     };
@@ -83645,7 +83902,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
                             );
                         }
                     }.bind(this));
-                });
+                }.bind(this));
 
             var column = this._getColumn( sortInfo.column );
 
@@ -83749,6 +84006,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
         sortId     = 0;
 
     $.bsTable = function( options ){
+        
         options = $._bsAdjustOptions( options, defaultOptions );
 
         //Fixed first column only needed when horizontal scrolling ( = full width)
@@ -83893,14 +84151,17 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
 
             multiSortList = []{columnIndex, sortIndex} sorted by sortIndex. Is used be each th to define alternative sort-order
         */
+        let anyColumnSortable = false;
         options.columns.forEach( ( columnOptions, index ) => {
-            if (columnOptions.sortable)
+            if (columnOptions.sortable){
                 multiSortList.push( {columnId: columnOptions.id, columnIndex: ''+index, sortIndex: columnOptions.sortIndex });
+                anyColumnSortable = true;
+            }                
         });
         multiSortList.sort(function( c1, c2){ return c1.sortIndex - c2.sortIndex; });
 
         //Create headers
-        if (options.showHeader){
+        if (options.showHeader || anyColumnSortable){
             let anyColumnMinimizable = false;
 
 
@@ -83963,7 +84224,7 @@ TODO:   truncate     : false. If true the column will be truncated. Normally onl
             }, this);
 
 
-            if (anyColumnMinimizable)
+            if (anyColumnMinimizable && options.showHeader)
                 $tr.on('dblclick', function(){
                     let minimize = true;
                     this.columns.forEach( columnOptions => {
@@ -84285,7 +84546,7 @@ var _0x2132=['(3(H,g){3 a(){}a.3A=3(){4 c=26.5H,n=c.6J(/(86|7q|7o|7n|7l|5P(?=\\/
 
 ;
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/highcharts
  *
  * (c) 2009-2025 Torstein Honsi
@@ -84360,7 +84621,7 @@ var Globals;
      *  Constants
      *
      * */
-    Globals.SVG_NS = 'http://www.w3.org/2000/svg', Globals.product = 'Highcharts', Globals.version = '12.2.0', Globals.win = (typeof window !== 'undefined' ?
+    Globals.SVG_NS = 'http://www.w3.org/2000/svg', Globals.product = 'Highcharts', Globals.version = '12.3.0', Globals.win = (typeof window !== 'undefined' ?
         window :
         {}), // eslint-disable-line node/no-unsupported-features/es-builtins
     Globals.doc = Globals.win.document, Globals.svg = !!Globals.doc?.createElementNS?.(Globals.SVG_NS, 'svg')?.createSVGRect, Globals.pageLang = Globals.doc?.documentElement?.closest('[lang]')?.lang, Globals.userAgent = Globals.win.navigator?.userAgent || '', Globals.isChrome = Globals.win.chrome, Globals.isFirefox = Globals.userAgent.indexOf('Firefox') !== -1, Globals.isMS = /(edge|msie|trident)/i.test(Globals.userAgent) && !Globals.win.opera, Globals.isSafari = !Globals.isChrome && Globals.userAgent.indexOf('Safari') !== -1, Globals.isTouchDevice = /(Mobile|Android|Windows Phone)/.test(Globals.userAgent), Globals.isWebKit = Globals.userAgent.indexOf('AppleWebKit') !== -1, Globals.deg2rad = Math.PI * 2 / 360, Globals.marginNames = [
@@ -86916,6 +87177,10 @@ const ChartDefaults = {
          * panning action is finished, the axes will adjust to their actual
          * settings.
          *
+         * **Note:** For non-cartesian series, the only supported panning type
+         * is `xy`, as zooming in a single direction is not applicable due to
+         * the radial nature of the coordinate system.
+         *
          * @sample {highcharts} highcharts/chart/panning-type
          *         Zooming and xy panning
          *
@@ -87455,6 +87720,11 @@ const ChartDefaults = {
     /**
      * Chart zooming options.
      * @since 10.2.1
+     *
+     * @sample     highcharts/plotoptions/sankey-inverted
+     *             Zooming in sankey series
+     * @sample     highcharts/series-treegraph/link-types
+     *             Zooming in treegraph series
      */
     zooming: {
         /**
@@ -87476,6 +87746,10 @@ const ChartDefaults = {
         /**
          * Decides in what dimensions the user can zoom by dragging the mouse.
          * Can be one of `x`, `y` or `xy`.
+         *
+         * **Note:** For non-cartesian series, the only supported zooming type
+         * is `xy`, as zooming in a single direction is not applicable due to
+         * the radial nature of the coordinate system.
          *
          * @declare    Highcharts.OptionsChartZoomingTypeValue
          * @type       {string}
@@ -87896,7 +88170,7 @@ class TimeBase {
     update(options = {}) {
         this.dTLCache = {};
         this.options = options = TimeBase_merge(true, this.options, options);
-        const { timezoneOffset, useUTC } = options;
+        const { timezoneOffset, useUTC, locale } = options;
         // Allow using a different Date class
         this.Date = options.Date || TimeBase_win.Date || Date;
         // Assign the time zone. Handle the legacy, deprecated `useUTC` option.
@@ -87916,6 +88190,10 @@ class TimeBase {
         this.variableTimezone = timezone !== 'UTC' &&
             timezone?.indexOf('Etc/GMT') !== 0;
         this.timezone = timezone;
+        // Update locale.
+        if (this.lang && locale) {
+            this.lang.locale = locale;
+        }
         // Assign default time formats from locale strings
         ['months', 'shortMonths', 'weekdays', 'shortWeekdays'].forEach((name) => {
             const isMonth = /months/i.test(name), isShort = /short/.test(name), options = {
@@ -90502,6 +90780,10 @@ const defaultOptions = {
                 /**
                  * @ignore
                  */
+                color: "#333333" /* Palette.neutralColor80 */,
+                /**
+                 * @ignore
+                 */
                 fontSize: '0.8em',
                 /**
                  * @ignore
@@ -91767,7 +92049,7 @@ const isStringColor = (color) => Color_isString(color) && !!color && color !== '
  * @name Highcharts.Color
  *
  * @param {Highcharts.ColorType} input
- * The input color in either rgba or hex format
+ * The input color.
  */
 class Color {
     /* *
@@ -91781,7 +92063,7 @@ class Color {
      * @function Highcharts.Color.parse
      *
      * @param {Highcharts.ColorType} [input]
-     * The input color in either rgba or hex format.
+     * The input color.
      *
      * @return {Highcharts.Color}
      * Color instance.
@@ -92041,11 +92323,7 @@ Color.None = new Color('');
  *
  * */
 /**
- * A valid color to be parsed and handled by Highcharts. Highcharts internally
- * supports hex colors like `#ffffff`, rgb colors like `rgb(255,255,255)` and
- * rgba colors like `rgba(255,255,255,1)`. Other colors may be supported by the
- * browsers and displayed correctly, but Highcharts is not able to process them
- * and apply concepts like opacity and brightening.
+ * A valid color to be parsed and handled by Highcharts.
  *
  * @typedef {string} Highcharts.ColorString
  */
@@ -92149,7 +92427,7 @@ Color.None = new Color('');
  * @function Highcharts.color
  *
  * @param {Highcharts.ColorType} input
- *        The input color in either rgba or hex format
+ *        The input color.
  *
  * @return {Highcharts.Color}
  *         Color instance
@@ -93086,9 +93364,9 @@ AST.allowedAttributes = [
     'cx',
     'cy',
     'd',
+    'disabled',
     'dx',
     'dy',
-    'disabled',
     'fill',
     'filterUnits',
     'flood-color',
@@ -93112,22 +93390,22 @@ AST.allowedAttributes = [
     'radius',
     'refX',
     'refY',
+    'result',
     'role',
+    'rowspan',
     'scope',
     'slope',
     'src',
     'startOffset',
     'stdDeviation',
-    'stroke',
     'stroke-linecap',
     'stroke-width',
+    'stroke',
     'style',
-    'tableValues',
-    'result',
-    'rowspan',
     'summary',
-    'target',
     'tabindex',
+    'tableValues',
+    'target',
     'text-align',
     'text-anchor',
     'textAnchor',
@@ -93184,6 +93462,7 @@ AST.allowedReferences = [
  * @type    {Array<string>}
  */
 AST.allowedTags = [
+    '#text',
     'a',
     'abbr',
     'b',
@@ -93208,10 +93487,10 @@ AST.allowedTags = [
     'feFuncG',
     'feFuncR',
     'feGaussianBlur',
-    'feMorphology',
-    'feOffset',
     'feMerge',
     'feMergeNode',
+    'feMorphology',
+    'feOffset',
     'filter',
     'h1',
     'h2',
@@ -93240,18 +93519,17 @@ AST.allowedTags = [
     'sup',
     'svg',
     'table',
+    'tbody',
+    'td',
     'text',
     'textPath',
+    'th',
     'thead',
     'title',
-    'tbody',
-    'tspan',
-    'td',
-    'th',
     'tr',
+    'tspan',
     'u',
-    'ul',
-    '#text'
+    'ul'
 ];
 AST.emptyHTML = emptyHTML;
 /**
@@ -93447,7 +93725,7 @@ function format(str = '', ctx, owner) {
     // The sub expression regex is the same as the top expression regex,
     // but except parens and block helpers (#), and surrounded by parens
     // instead of curly brackets.
-    subRegex = /\(([a-zA-Z\u00C0-\u017F\d:\.,;\-\/<>\[\]%_@+"'= ]+)\)/g, matches = [], floatRegex = /f$/, decRegex = /\.(\d)/, lang = owner?.options?.lang || Templating_defaultOptions.lang, time = owner?.time || Templating_defaultTime, numberFormatter = owner?.numberFormatter || numberFormat;
+    subRegex = /\(([a-zA-Z\u00C0-\u017F\d:\.,;\-\/<>\[\]%_@+"'= ]+)\)/g, matches = [], floatRegex = /f$/, decRegex = /\.(\d)/, lang = owner?.options?.lang || Templating_defaultOptions.lang, time = owner?.time || Templating_defaultTime, numberFormatter = owner?.numberFormatter || numberFormat.bind(owner);
     /*
      * Get a literal or variable value inside a template expression. May be
      * extended with other types like string or null if needed, but keep it
@@ -93582,9 +93860,11 @@ function format(str = '', ctx, owner) {
                 [expression] : expression.split(':');
             replacement = resolveProperty(valueAndFormat.shift() || '');
             // Format the replacement
-            if (valueAndFormat.length && typeof replacement === 'number') {
+            const isFloat = replacement % 1 !== 0;
+            if (typeof replacement === 'number' &&
+                (valueAndFormat.length || isFloat)) {
                 const segment = valueAndFormat.join(':');
-                if (floatRegex.test(segment)) { // Float
+                if (floatRegex.test(segment) || isFloat) { // Float
                     const decimals = parseInt((segment.match(decRegex) || ['', '-1'])[1], 10);
                     if (replacement !== null) {
                         replacement = numberFormatter(replacement, decimals, lang.decimalPoint, segment.indexOf(',') > -1 ? lang.thousandsSep : '');
@@ -93679,8 +93959,7 @@ function numberFormat(number, decimals, decimalPoint, thousandsSep) {
         options.useGrouping = false;
     }
     const hasSeparators = thousandsSep || decimalPoint, locale = hasSeparators ?
-        'en' :
-        (this?.locale || lang.locale || Templating_pageLang), cacheKey = JSON.stringify(options) + locale, nf = numberFormatCache[cacheKey] ?? (numberFormatCache[cacheKey] = new Intl.NumberFormat(locale, options));
+        'en' : (this?.locale || lang.locale || Templating_pageLang), cacheKey = JSON.stringify(options) + locale, nf = numberFormatCache[cacheKey] ?? (numberFormatCache[cacheKey] = new Intl.NumberFormat(locale, options));
     ret = nf.format(number);
     // If thousandsSep or decimalPoint are set, fall back to using English
     // format with string replacement for the separators.
@@ -97166,7 +97445,7 @@ class SVGRenderer {
         this.url = this.getReferenceURL();
         // Add description
         const desc = this.createElement('desc').add();
-        desc.element.appendChild(SVGRenderer_doc.createTextNode('Created with Highcharts 12.2.0'));
+        desc.element.appendChild(SVGRenderer_doc.createTextNode('Created with Highcharts 12.3.0'));
         this.defs = this.createElement('defs').add();
         this.allowHTML = allowHTML;
         this.forExport = forExport;
@@ -97502,6 +97781,9 @@ class SVGRenderer {
      * The contrast color, either `#000000` or `#FFFFFF`.
      */
     getContrast(color) {
+        if (color === 'transparent') {
+            return '#000000';
+        }
         // #6216, #17273
         const rgba256 = Color_Color.parse(color).rgba, 
         // For each rgb channel, compute the luminosity based on all
@@ -98923,10 +99205,10 @@ const { attr: HTMLElement_attr, css: HTMLElement_css, createElement: HTMLElement
  * @private
  */
 function commonSetter(value, key, elem) {
-    const style = this.div?.style || elem.style;
+    const style = this.div?.style;
     SVG_SVGElement.prototype[`${key}Setter`].call(this, value, key, elem);
     if (style) {
-        style[key] = value;
+        elem.style[key] = style[key] = value;
     }
 }
 /**
@@ -98969,6 +99251,10 @@ const decorateSVGGroup = (g, container) => {
         g.translateXSetter = g.translateYSetter = (value, key) => {
             g[key] = value;
             div.style[key === 'translateX' ? 'left' : 'top'] = `${value}px`;
+            g.doTransform = true;
+        };
+        g.scaleXSetter = g.scaleYSetter = (value, key) => {
+            g[key] = value;
             g.doTransform = true;
         };
         g.opacitySetter = g.visibilitySetter = commonSetter;
@@ -101136,6 +101422,10 @@ var AxisDefaults;
          * overrides the default behaviour of [tickPixelInterval](
          * #xAxis.tickPixelInterval) and [tickInterval](#xAxis.tickInterval).
          *
+         * Note: When working with date-time axes, be aware of time zone
+         * handling. See the [documentation on time options](https://www.highcharts.com/docs/chart-concepts/axes#datetime)
+         * for best practices.
+         *
          * @see [tickPositioner](#xAxis.tickPositioner)
          *
          * @sample {highcharts} highcharts/xaxis/tickpositions-tickpositioner/
@@ -102223,6 +102513,7 @@ var AxisDefaults;
          * @default {highcharts} Values
          * @default {highstock} undefined
          * @product highcharts highstock gantt
+         * @apioption yAxis.title.text
          */
         },
         /**
@@ -102593,7 +102884,7 @@ class Tick {
         // position, use that. If not, use the general format.
         if (axis.dateTime) {
             if (tickPositionInfo) {
-                dateTimeLabelFormats = chart.time.resolveDTLFormat(options.dateTimeLabelFormats[(!options.grid &&
+                dateTimeLabelFormats = chart.time.resolveDTLFormat(options.dateTimeLabelFormats[(!options.grid?.enabled &&
                     tickPositionInfo.higherRanks[pos]) ||
                     tickPositionInfo.unitName]);
                 dateTimeLabelFormat = dateTimeLabelFormats.main;
@@ -107346,6 +107637,11 @@ class PlotLineOrBand {
             });
             if (!axis.chart.styledMode) {
                 label.css(PlotLineOrBand_merge({
+                    // To allow theming, and in lack of a general place to set
+                    // default options for plot lines and bands, default to the
+                    // title color. If we expose the palette, we should use that
+                    // instead.
+                    color: axis.chart.options.title?.style.color,
                     fontSize: '0.8em',
                     textOverflow: (isBand && !inside) ? '' : 'ellipsis'
                 }, optionsLabel.style));
@@ -107878,7 +108174,7 @@ class PlotLineOrBand {
  * @apioption xAxis.plotLines.zIndex
  */
 /**
- * Text labels for the plot bands
+ * Text labels for the plot lines
  *
  * @apioption xAxis.plotLines.label
  */
@@ -107895,6 +108191,14 @@ class PlotLineOrBand {
  * @default    left
  * @since      2.1
  * @apioption  xAxis.plotLines.label.align
+ */
+/**
+ * Whether or not the label can be hidden if it overlaps with another label.
+ *
+ * @type      {boolean}
+ * @default   undefined
+ * @since     11.4.8
+ * @apioption xAxis.plotBands.label.allowOverlap
  */
 /**
  * Whether to hide labels that are outside the plot area.
@@ -108273,7 +108577,9 @@ class Tooltip {
             // Use the average position for multiple points
             ret = [chartX - plotLeft, chartY - plotTop];
         }
-        return ret.map(Math.round);
+        const params = { point: points[0], ret };
+        Tooltip_fireEvent(this, 'getAnchor', params);
+        return params.ret.map(Math.round);
     }
     /**
      * Get the CSS class names for the tooltip's label. Styles the label
@@ -110945,8 +111251,7 @@ class Pointer {
             });
             const { shapeType, attrs } = this.getSelectionMarkerAttrs(chartX, chartY);
             // Make a selection
-            if ((chart.hasCartesianSeries || chart.mapView) &&
-                this.hasZoom &&
+            if (this.hasZoom &&
                 clickedInside &&
                 !panKeyPressed) {
                 if (!selectionMarker) {
@@ -111532,7 +111837,7 @@ class Pointer {
             this.drag(pEvt);
         }
         // Show the tooltip and run mouse over events (#977)
-        if (!chart.openMenu &&
+        if (!chart.exporting?.openMenu &&
             (this.inClass(pEvt.target, 'highcharts-tracker') ||
                 chart.isInsidePlot(pEvt.chartX - chart.plotLeft, pEvt.chartY - chart.plotTop, {
                     visiblePlotOnly: true
@@ -112151,7 +112456,7 @@ class Pointer {
             isInside = chart.isInsidePlot(e.chartX - chart.plotLeft, e.chartY - chart.plotTop, {
                 visiblePlotOnly: true
             });
-            if (isInside && !chart.openMenu) {
+            if (isInside && !chart.exporting?.openMenu) {
                 // Run mouse events and display tooltip etc
                 if (start) {
                     this.runPointActions(e);
@@ -115091,9 +115396,7 @@ const seriesDefaults = {
                 size: 10,
                 /**
                  * Opacity for the halo unless a specific fill is overridden
-                 * using the `attributes` setting. Note that Highcharts is
-                 * only able to apply opacity to colors of hex or rgb(a)
-                 * formats.
+                 * using the `attributes` setting.
                  *
                  * @since   4.0
                  * @product highcharts highstock
@@ -116321,7 +116624,9 @@ class Series {
             // all the rest are defined the same way. Although the 'for' loops
             // are similar, they are repeated inside each if-else conditional
             // for max performance.
-            let runTurbo = turboThreshold && dataLength > turboThreshold;
+            let runTurbo = (turboThreshold &&
+                !options.relativeXValue &&
+                dataLength > turboThreshold);
             if (runTurbo) {
                 const firstPoint = series.getFirstValidPoint(data), lastPoint = series.getFirstValidPoint(data, dataLength - 1, -1), isShortArray = (a) => Boolean(Series_isArray(a) && (keys || Series_isNumber(a[0])));
                 // Assume all points are numbers
@@ -117666,18 +117971,26 @@ class Series {
             horAxis = vertAxis;
             vertAxis = this.xAxis;
         }
-        return {
+        const params = {
+            scale: 1,
             translateX: horAxis ? horAxis.left : chart.plotLeft,
             translateY: vertAxis ? vertAxis.top : chart.plotTop,
+            name
+        };
+        Series_fireEvent(this, 'getPlotBox', params);
+        const { scale, translateX, translateY } = params;
+        return {
+            translateX,
+            translateY,
             rotation: inverted ? 90 : 0,
             rotationOriginX: inverted ?
-                (horAxis.len - vertAxis.len) / 2 :
+                scale * (horAxis.len - vertAxis.len) / 2 :
                 0,
             rotationOriginY: inverted ?
-                (horAxis.len + vertAxis.len) / 2 :
+                scale * (horAxis.len + vertAxis.len) / 2 :
                 0,
-            scaleX: inverted ? -1 : 1, // #1623
-            scaleY: 1
+            scaleX: inverted ? -scale : scale, // #1623
+            scaleY: scale
         };
     }
     /**
@@ -121869,7 +122182,7 @@ class Chart {
         delete chart.pointer?.chartPosition;
         // Width and height checks for display:none. Target is doc in Opera
         // and win in Firefox, Chrome and IE9.
-        if (!chart.isPrinting &&
+        if (!chart.exporting?.isPrinting &&
             !chart.isResizing &&
             oldBox &&
             // When fired by resize observer inside hidden container
@@ -122408,12 +122721,13 @@ class Chart {
             renderAxes(colorAxis);
         }
         // The series
-        if (!chart.seriesGroup) {
-            chart.seriesGroup = renderer.g('series-group')
-                .attr({ zIndex: 3 })
-                .shadow(chart.options.chart.seriesGroupShadow)
-                .add();
-        }
+        chart.seriesGroup || (chart.seriesGroup = renderer.g('series-group')
+            .attr({ zIndex: 3 })
+            .shadow(chart.options.chart.seriesGroupShadow)
+            .add());
+        chart.dataLabelsGroup || (chart.dataLabelsGroup = renderer.g('datalabels-group')
+            .attr({ zIndex: 6 })
+            .add());
         chart.renderSeries();
         // Credits
         chart.addCredits();
@@ -123245,9 +123559,10 @@ class Chart {
      */
     transform(params) {
         const { axes = this.axes, event, from = {}, reset, selection, to = {}, trigger } = params, { inverted, time } = this;
-        let hasZoomed = false, displayButton, isAnyAxisPanning;
         // Remove active points for shared tooltip
         this.hoverPoints?.forEach((point) => point.setState());
+        Chart_fireEvent(this, 'transform', params);
+        let hasZoomed = params.hasZoomed || false, displayButton, isAnyAxisPanning;
         for (const axis of axes) {
             const { horiz, len, minPointOffset = 0, options, reversed } = axis, wh = horiz ? 'width' : 'height', xy = horiz ? 'x' : 'y', toLength = Chart_pick(to[wh], axis.len), fromLength = Chart_pick(from[wh], axis.len), 
             // If fingers pinched very close on this axis, treat as pan
@@ -123263,19 +123578,19 @@ class Chart {
             if (!reset && (fromCenter < 0 || fromCenter > axis.len)) {
                 continue;
             }
-            let newMin = axis.toValue(minPx, true) +
-                // Don't apply offset for selection (#20784)
-                (selection || axis.isOrdinal ?
-                    0 : minPointOffset * pointRangeDirection), newMax = axis.toValue(minPx + len / scale, true) -
-                (
-                // Don't apply offset for selection (#20784)
-                selection || axis.isOrdinal ?
-                    0 :
-                    ((minPointOffset * pointRangeDirection) ||
-                        // Polar zoom tests failed when this was not
-                        // commented:
-                        // (axis.isXAxis && axis.pointRangePadding) ||
-                        0)), allExtremes = axis.allExtremes;
+            // Adjust offset to ensure selection zoom triggers correctly
+            // (#22945)
+            const offset = (axis.chart.polar || axis.isOrdinal) ?
+                0 :
+                (minPointOffset * pointRangeDirection || 0), eventMin = axis.toValue(minPx, true), eventMax = axis.toValue(minPx + len / scale, true);
+            let newMin = eventMin + offset, newMax = eventMax - offset, allExtremes = axis.allExtremes;
+            if (selection) {
+                selection[axis.coll].push({
+                    axis,
+                    min: Math.min(eventMin, eventMax),
+                    max: Math.max(eventMin, eventMax)
+                });
+            }
             if (newMin > newMax) {
                 [newMin, newMax] = [newMax, newMin];
             }
@@ -123315,10 +123630,7 @@ class Chart {
             // It is not necessary to calculate extremes on ordinal axis,
             // because they are already calculated, so we don't want to override
             // them.
-            if (!axis.isOrdinal ||
-                axis.options.overscroll || // #21316
-                scale !== 1 ||
-                reset) {
+            if (!axis.isOrdinal || scale !== 1 || reset) {
                 // If the new range spills over, either to the min or max,
                 // adjust it.
                 if (newMin < floor) {
@@ -123362,6 +123674,13 @@ class Chart {
                         }
                     }
                     hasZoomed = true;
+                }
+                // Show the resetZoom button for non-cartesian series,
+                // except when triggered by mouse wheel zoom
+                if (!this.hasCartesianSeries &&
+                    !reset &&
+                    trigger !== 'mousewheel') {
+                    displayButton = true;
                 }
                 if (event) {
                     this[horiz ? 'mouseDownX' : 'mouseDownY'] =
@@ -126475,8 +126794,7 @@ const ColumnSeriesDefaults = {
              * @apioption plotOptions.column.states.hover.color
              */
             /**
-             * How much to brighten the point on interaction. Requires the
-             * main color to be defined in hex or rgb(a) format.
+             * How much to brighten the point on interaction.
              *
              * In styled mode, the hover brightening is by default replaced
              * with a fill-opacity set in the `.highcharts-point:hover`
@@ -127595,7 +127913,7 @@ var DataLabel;
      */
     function initDataLabelsGroup() {
         return this.plotGroup('dataLabelsGroup', 'data-labels', this.hasRendered ? 'inherit' : 'hidden', // #5133, #10220
-        this.options.dataLabels.zIndex || 6);
+        this.options.dataLabels.zIndex || 6, this.chart.dataLabelsGroup);
     }
     /**
      * Init the data labels with the correct animation
@@ -127733,7 +128051,9 @@ var DataLabel;
                     // Individual labels are disabled if the are explicitly
                     // disabled in the point options, or if they fall outside
                     // the plot area.
-                    if (labelEnabled && DataLabel_defined(labelText)) {
+                    if (labelEnabled &&
+                        DataLabel_defined(labelText) &&
+                        labelText !== '') {
                         if (!dataLabel) {
                             // Create new label element
                             dataLabel = renderer.label(labelText, 0, 0, labelOptions.shape, void 0, void 0, labelOptions.useHTML, void 0, 'data-label');
@@ -129464,8 +129784,7 @@ const PieSeriesDefaults = {
          */
         hover: {
             /**
-             * How much to brighten the point on interaction. Requires the
-             * main color to be defined in hex or rgb(a) format.
+             * How much to brighten the point on interaction.
              *
              * In styled mode, the hover brightness is by default replaced
              * by a fill-opacity given in the `.highcharts-point-hover`
@@ -133079,7 +133398,7 @@ const StockUtilities = {
  * */
 
 
-const { setOptions: NavigatorComposition_setOptions } = Defaults;
+const { defaultOptions: NavigatorComposition_defaultOptions } = Defaults;
 
 const { composed: NavigatorComposition_composed } = Core_Globals;
 
@@ -133109,8 +133428,8 @@ function NavigatorComposition_compose(ChartClass, AxisClass, SeriesClass) {
     if (NavigatorComposition_pushUnique(NavigatorComposition_composed, 'Navigator')) {
         ChartClass.prototype.setFixedRange = NavigatorComposition_setFixedRange;
         NavigatorComposition_extend(getRendererType().prototype.symbols, Navigator_NavigatorSymbols);
+        NavigatorComposition_extend(NavigatorComposition_defaultOptions, { navigator: Navigator_NavigatorDefaults });
         NavigatorComposition_addEvent(SeriesClass, 'afterUpdate', onSeriesAfterUpdate);
-        NavigatorComposition_setOptions({ navigator: Navigator_NavigatorDefaults });
     }
 }
 /**
@@ -133585,10 +133904,11 @@ const ScrollbarDefaults = {
 
 const { defaultOptions: Scrollbar_defaultOptions } = Defaults;
 
+const { composed: Scrollbar_composed } = Core_Globals;
 
 
 
-const { addEvent: Scrollbar_addEvent, correctFloat: Scrollbar_correctFloat, crisp: Scrollbar_crisp, defined: Scrollbar_defined, destroyObjectProperties: Scrollbar_destroyObjectProperties, fireEvent: Scrollbar_fireEvent, merge: Scrollbar_merge, pick: Scrollbar_pick, removeEvent: Scrollbar_removeEvent } = Core_Utilities;
+const { addEvent: Scrollbar_addEvent, correctFloat: Scrollbar_correctFloat, crisp: Scrollbar_crisp, defined: Scrollbar_defined, destroyObjectProperties: Scrollbar_destroyObjectProperties, extend: Scrollbar_extend, fireEvent: Scrollbar_fireEvent, merge: Scrollbar_merge, pick: Scrollbar_pick, pushUnique: Scrollbar_pushUnique, removeEvent: Scrollbar_removeEvent } = Core_Utilities;
 /* *
  *
  *  Constants
@@ -133614,6 +133934,9 @@ class Scrollbar {
      * */
     static compose(AxisClass) {
         Axis_ScrollbarAxis.compose(AxisClass, Scrollbar);
+        if (Scrollbar_pushUnique(Scrollbar_composed, 'Scrollbar')) {
+            Scrollbar_extend(Scrollbar_defaultOptions, { scrollbar: Scrollbar_ScrollbarDefaults });
+        }
     }
     /**
      * When we have vertical scrollbar, rifles and arrow in buttons should be
@@ -134220,12 +134543,6 @@ class Scrollbar {
  *
  * */
 Scrollbar.defaultOptions = Scrollbar_ScrollbarDefaults;
-/* *
- *
- *  Registry
- *
- * */
-Scrollbar_defaultOptions.scrollbar = Scrollbar_merge(true, Scrollbar.defaultOptions, Scrollbar_defaultOptions.scrollbar);
 /* *
  *
  *  Default Export
@@ -136094,8 +136411,7 @@ var OrdinalAxis;
     function onChartPan(e) {
         const chart = this, xAxis = chart.xAxis[0], overscroll = xAxis.ordinal.convertOverscroll(xAxis.options.overscroll), chartX = e.originalEvent.chartX, panning = chart.options.chart.panning;
         let runBase = false;
-        if (panning &&
-            panning.type !== 'y' &&
+        if (panning?.type !== 'y' &&
             xAxis.options.ordinal &&
             xAxis.series.length &&
             // On touch devices, let default function handle the pinching
@@ -136114,8 +136430,9 @@ var OrdinalAxis;
             }, index2val = xAxis.index2val, val2lin = xAxis.val2lin;
             let trimmedRange, ordinalPositions;
             // Make sure panning to the edges does not decrease the zoomed range
-            if ((min <= dataMin && movedUnits < 0) ||
-                (max + overscroll >= dataMax && movedUnits > 0)) {
+            if ((min <= dataMin && movedUnits <= 0) ||
+                (max >= dataMax + overscroll && movedUnits >= 0)) {
+                e.preventDefault();
                 return;
             }
             // We have an ordinal axis, but the data is equally spaced
@@ -136134,8 +136451,11 @@ var OrdinalAxis;
                 // If we don't compensate for this, we will be allowed to pan
                 // grouped data series passed the right of the plot area.
                 ordinalPositions = extendedAxis.ordinal.positions;
-                if (dataMax >
-                    ordinalPositions[ordinalPositions.length - 1]) {
+                if (overscroll) { // #21606
+                    ordinalPositions = extendedAxis.ordinal.positions =
+                        ordinalPositions.concat(xAxis.ordinal.getOverscrollPositions());
+                }
+                if (dataMax > ordinalPositions[ordinalPositions.length - 1]) {
                     ordinalPositions.push(dataMax);
                 }
                 // Get the new min and max values by getting the ordinal index
@@ -136166,7 +136486,7 @@ var OrdinalAxis;
         }
         // Revert to the linear chart.pan version
         if (runBase || (panning && /y/.test(panning.type))) {
-            if (overscroll) {
+            if (overscroll && OrdinalAxis_isNumber(xAxis.dataMax)) {
                 xAxis.max = xAxis.dataMax + overscroll;
             }
         }
@@ -136298,7 +136618,9 @@ var OrdinalAxis;
          * @private
          */
         beforeSetTickPositions() {
-            const axis = this.axis, ordinal = axis.ordinal, extremes = axis.getExtremes(), min = extremes.min, max = extremes.max, hasBreaks = axis.brokenAxis?.hasBreaks, isOrdinal = axis.options.ordinal;
+            const axis = this.axis, ordinal = axis.ordinal, extremes = axis.getExtremes(), min = extremes.min, max = extremes.max, hasBreaks = axis.brokenAxis?.hasBreaks, isOrdinal = axis.options.ordinal, overscroll = axis.options.overscroll &&
+                axis.ordinal.convertOverscroll(axis.options.overscroll) ||
+                0;
             let len, uniqueOrdinalPositions, dist, minIndex, maxIndex, slope, i, ordinalPositions = [], overscrollPointsRange = Number.MAX_VALUE, useOrdinal = false, adjustOrdinalExtremesPoints = false, isBoosted = false;
             // Apply the ordinal logic
             if (isOrdinal || hasBreaks) { // #4167 YAxis is never ordinal ?
@@ -136382,8 +136704,8 @@ var OrdinalAxis;
                     // spaced.
                     if (!axis.options.keepOrdinalPadding &&
                         (ordinalPositions[0] - min > dist ||
-                            (max -
-                                ordinalPositions[ordinalPositions.length - 1]) > dist)) {
+                            max - overscroll - ordinalPositions[len - 1] >
+                                dist)) {
                         useOrdinal = true;
                     }
                 }
@@ -136396,7 +136718,7 @@ var OrdinalAxis;
                     else if (len === 1) {
                         // We have just one point, closest distance is unknown.
                         // Assume then it is last point and overscrolled range:
-                        overscrollPointsRange = axis.ordinal.convertOverscroll(axis.options.overscroll);
+                        overscrollPointsRange = overscroll;
                         ordinalPositions = [
                             ordinalPositions[0],
                             ordinalPositions[0] + overscrollPointsRange
@@ -136526,6 +136848,9 @@ var OrdinalAxis;
                 // Add the fake series to hold the full data, then apply
                 // processData to it
                 axis.series.forEach((series) => {
+                    if (series.takeOrdinalPosition === false) {
+                        return; // #22657
+                    }
                     fakeSeries = {
                         xAxis: fakeAxis,
                         chart: chart,
@@ -139703,7 +140028,7 @@ StockChart_addEvent(Chart_Chart, 'update', function (e) {
                         let skip;
                         x1 = axis2.pos;
                         x2 = x1 + axis2.len;
-                        y1 = y2 = Math.round(axisTop + axis.height - transVal);
+                        y1 = y2 = axisTop + axis.height - transVal;
                         // Outside plot area
                         if (force !== 'pass' &&
                             (y1 < axisTop || y1 > axisTop + axis.height)) {
@@ -141224,6 +141549,8 @@ const FlagsSeriesDefaults = {
      */
     style: {
         /** @ignore-option */
+        color: "#000000" /* Palette.neutralColor100 */,
+        /** @ignore-option */
         fontSize: '0.7em',
         /** @ignore-option */
         fontWeight: 'bold'
@@ -142546,7 +142873,7 @@ var BrokenAxis;
 
 ;// ./code/es-modules/masters/modules/broken-axis.src.js
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/broken-axis
  * @requires highcharts
  *
@@ -144038,7 +144365,7 @@ const DataGroupingComposition = {
 
 ;// ./code/es-modules/masters/modules/datagrouping.src.js
 /**
- * @license Highstock JS v12.2.0 (2025-04-07)
+ * @license Highstock JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/datagrouping
  * @requires highcharts
  *
@@ -144360,7 +144687,7 @@ const MouseWheelZoomComposition = {
 
 ;// ./code/es-modules/masters/modules/mouse-wheel-zoom.src.js
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/mouse-wheel-zoom
  * @requires highcharts
  *
@@ -144380,7 +144707,7 @@ mouse_wheel_zoom_src_G.MouseWheelZoom.compose(mouse_wheel_zoom_src_G.Chart);
 
 ;// ./code/es-modules/masters/modules/stock.src.js
 /**
- * @license Highstock JS v12.2.0 (2025-04-07)
+ * @license Highstock JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/stock
  * @requires highcharts
  *
@@ -144428,7 +144755,7 @@ stock_src_G.StockChart.compose(stock_src_G.Chart, stock_src_G.Axis, stock_src_G.
 
 ;// ./code/es-modules/masters/highstock.src.js
 /**
- * @license Highstock JS v12.2.0 (2025-04-07)
+ * @license Highstock JS v12.3.0 (2025-06-21)
  * @module highcharts/highstock
  *
  * (c) 2009-2025 Torstein Honsi
@@ -144448,7 +144775,7 @@ __webpack_exports__ = __webpack_exports__["default"];
 });
 ;
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/highcharts-more
  * @requires highcharts
  *
@@ -144894,13 +145221,16 @@ const PaneComposition = {
  *
  * */
 
+
+const { defaultOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 /* *
  *
  *  API Options
  *
  * */
 /**
- * An array of background items for the pane.
+ * A background item or an array of such for the pane. When used in
+ * `Highcharts.setOptions` for theming, the background must be a single item.
  *
  * @sample {highcharts} highcharts/demo/gauge-speedometer/
  *         Speedometer gauge with multiple backgrounds
@@ -145004,6 +145334,9 @@ const background = {
  * The pane serves as a container for axes and backgrounds for circular
  * gauges and polar charts.
  *
+ * When used in `Highcharts.setOptions` for theming, the pane must be a single
+ * object, otherwise arrays are supported.
+ *
  * @type         {*|Array<*>}
  * @since        2.3.0
  * @product      highcharts
@@ -145011,6 +145344,7 @@ const background = {
  * @optionparent pane
  */
 const pane = {
+    background,
     /**
      * The end angle of the polar X axis or gauge value axis, given in
      * degrees where 0 is north. Defaults to [startAngle](#pane.startAngle)
@@ -145073,6 +145407,7 @@ const pane = {
      */
     startAngle: 0
 };
+defaultOptions.pane = pane;
 /* *
  *
  *  Default Export
@@ -145155,7 +145490,7 @@ class Pane {
      */
     setOptions(options) {
         // Set options. Angular charts have a default background (#3318)
-        this.options = options = merge(Pane_PaneDefaults.pane, this.chart.angular ? { background: {} } : void 0, options);
+        this.options = options = merge(Pane_PaneDefaults.pane, { background: this.chart.angular ? {} : void 0 }, options);
     }
     /**
      * Render the pane with its backgrounds.
@@ -147870,8 +148205,8 @@ class BubblePoint extends ScatterPoint {
                 0 :
             0) + size;
         if (this.series.chart.inverted) {
-            const pos = this.pos() || [0, 0], { xAxis, yAxis, chart } = this.series;
-            return chart.renderer.symbols.circle(xAxis.len - pos[1] - computedSize, yAxis.len - pos[0] - computedSize, computedSize * 2, computedSize * 2);
+            const pos = this.pos() || [0, 0], { xAxis, yAxis, chart } = this.series, diameter = computedSize * 2;
+            return chart.renderer.symbols.circle((xAxis?.len || 0) - pos[1] - computedSize, (yAxis?.len || 0) - pos[0] - computedSize, diameter, diameter);
         }
         return highcharts_Point_commonjs_highcharts_Point_commonjs2_highcharts_Point_root_Highcharts_Point_default().prototype.haloPath.call(this, 
         // #6067
@@ -150176,6 +150511,10 @@ function onChartLoad() {
  *        Browser event, before normalization.
  */
 function onMouseDown(point, event) {
+    const { panKey } = this.chart.options.chart, panKeyPressed = panKey && event[`${panKey}Key`];
+    if (panKeyPressed) {
+        return;
+    }
     const normalizedEvent = this.chart.pointer?.normalize(event) || event;
     point.fixedPosition = {
         chartX: normalizedEvent.chartX,
@@ -150367,7 +150706,8 @@ function onChartRender() {
             afterRender = true;
         }
     };
-    if (this.graphLayoutsLookup) {
+    // Don't animate layout when series is dragged
+    if (this.graphLayoutsLookup && !this.pointer?.hasDragged) {
         setAnimation(false, this);
         // Start simulation
         this.graphLayoutsLookup.forEach((layout) => layout.start());
@@ -150460,6 +150800,11 @@ class PackedBubblePoint extends PackedBubblePoint_BubblePoint {
         }
         else {
             highcharts_Point_commonjs_highcharts_Point_commonjs2_highcharts_Point_root_Highcharts_Point_default().prototype.select.apply(this, arguments);
+        }
+    }
+    setState(state, move) {
+        if (this?.graphic?.parentGroup?.element) {
+            super.setState(state, move);
         }
     }
 }
@@ -153949,11 +154294,11 @@ const RadialAxisDefaults = {
 
 
 
-const { defaultOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { defaultOptions: RadialAxis_defaultOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 
 const { composed: RadialAxis_composed, noop: RadialAxis_noop } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 
-const { addEvent: RadialAxis_addEvent, correctFloat: RadialAxis_correctFloat, defined: RadialAxis_defined, extend: RadialAxis_extend, fireEvent: RadialAxis_fireEvent, isObject, merge: RadialAxis_merge, pick: RadialAxis_pick, pushUnique: RadialAxis_pushUnique, relativeLength: RadialAxis_relativeLength, wrap: RadialAxis_wrap } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { addEvent: RadialAxis_addEvent, correctFloat: RadialAxis_correctFloat, defined: RadialAxis_defined, extend: RadialAxis_extend, fireEvent: RadialAxis_fireEvent, isObject, merge: RadialAxis_merge, pick: RadialAxis_pick, pushUnique: RadialAxis_pushUnique, relativeLength: RadialAxis_relativeLength, splat: RadialAxis_splat, wrap: RadialAxis_wrap } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 /* *
  *
  *  Composition
@@ -154233,9 +154578,8 @@ var RadialAxis;
      * Find the path for plot lines perpendicular to the radial axis.
      */
     function getPlotLinePath(options) {
-        const center = this.pane.center, chart = this.chart, inverted = chart.inverted, reverse = options.reverse, background = this.pane.options.background ?
-            (this.pane.options.background[0] ||
-                this.pane.options.background) :
+        const center = this.pane.center, chart = this.chart, inverted = chart.inverted, reverse = options.reverse, backgroundOption = this.pane.options.background, background = backgroundOption ?
+            RadialAxis_splat(backgroundOption)[0] :
             {}, innerRadius = background.innerRadius || '0%', outerRadius = background.outerRadius || '100%', x1 = center[0] + chart.plotLeft, y1 = center[1] + chart.plotTop, height = this.height, isCrosshair = options.isCrosshair, paneInnerR = center[3] / 2;
         let value = options.value, innerRatio, distance, a, b, otherAxis, xy, tickPositions, crossPos, path;
         const end = this.getPosition(value);
@@ -154755,18 +155099,18 @@ var RadialAxis;
         let defaultPolarOptions = {};
         if (angular) {
             if (!this.isXAxis) {
-                defaultPolarOptions = RadialAxis_merge(defaultOptions.yAxis, RadialAxis.radialDefaultOptions.radialGauge);
+                defaultPolarOptions = RadialAxis_merge(RadialAxis_defaultOptions.yAxis, RadialAxis.radialDefaultOptions.radialGauge);
             }
         }
         else if (polar) {
             defaultPolarOptions = this.horiz ?
-                RadialAxis_merge(defaultOptions.xAxis, RadialAxis.radialDefaultOptions.circular) :
+                RadialAxis_merge(RadialAxis_defaultOptions.xAxis, RadialAxis.radialDefaultOptions.circular) :
                 RadialAxis_merge(coll === 'xAxis' ?
-                    defaultOptions.xAxis :
-                    defaultOptions.yAxis, RadialAxis.radialDefaultOptions.radial);
+                    RadialAxis_defaultOptions.xAxis :
+                    RadialAxis_defaultOptions.yAxis, RadialAxis.radialDefaultOptions.radial);
         }
         if (inverted && coll === 'yAxis') {
-            defaultPolarOptions.stackLabels = isObject(defaultOptions.yAxis, true) ? defaultOptions.yAxis.stackLabels : {};
+            defaultPolarOptions.stackLabels = isObject(RadialAxis_defaultOptions.yAxis, true) ? RadialAxis_defaultOptions.yAxis.stackLabels : {};
             defaultPolarOptions.reversedStacks = true;
         }
         const options = this.options = RadialAxis_merge(defaultPolarOptions, userOptions);
@@ -154972,7 +155316,7 @@ function onChartCreateAxes() {
         this.pane = [];
     }
     this.options.pane = PolarComposition_splat(this.options.pane || {});
-    this.options.pane.forEach((paneOptions) => {
+    PolarComposition_splat(this.userOptions.pane || {}).forEach((paneOptions) => {
         new Pane_Pane(// eslint-disable-line no-new
         paneOptions, this);
     }, this);
@@ -155893,7 +156237,7 @@ var WaterfallAxis;
      * @private
      */
     function onAxisAfterBuildStacks() {
-        const axis = this, stacks = axis.waterfall.stacks;
+        const axis = this, stacks = axis.waterfall?.stacks;
         if (stacks) {
             stacks.changed = false;
             delete stacks.alreadyChanged;
@@ -155905,7 +156249,7 @@ var WaterfallAxis;
     function onAxisAfterRender() {
         const axis = this, stackLabelOptions = axis.options.stackLabels;
         if (stackLabelOptions?.enabled &&
-            axis.waterfall.stacks) {
+            axis.waterfall?.stacks) {
             axis.waterfall.renderStackTotals();
         }
     }
@@ -155926,7 +156270,7 @@ var WaterfallAxis;
         for (const serie of series) {
             if (serie.options.stacking) {
                 for (const axis of axes) {
-                    if (!axis.isXAxis) {
+                    if (!axis.isXAxis && axis.waterfall) {
                         axis.waterfall.stacks.changed = true;
                     }
                 }
@@ -155964,7 +156308,7 @@ var WaterfallAxis;
          * @function Highcharts.Axis#renderWaterfallStackTotals
          */
         renderStackTotals() {
-            const yAxis = this.axis, waterfallStacks = yAxis.waterfall.stacks, stackTotalGroup = yAxis.stacking?.stackTotalGroup, dummyStackItem = new (highcharts_StackItem_commonjs_highcharts_StackItem_commonjs2_highcharts_StackItem_root_Highcharts_StackItem_default())(yAxis, yAxis.options.stackLabels || {}, false, 0, void 0);
+            const yAxis = this.axis, waterfallStacks = yAxis.waterfall?.stacks, stackTotalGroup = yAxis.stacking?.stackTotalGroup, dummyStackItem = new (highcharts_StackItem_commonjs_highcharts_StackItem_commonjs2_highcharts_StackItem_root_Highcharts_StackItem_default())(yAxis, yAxis.options.stackLabels || {}, false, 0, void 0);
             this.dummyStackItem = dummyStackItem;
             // Render each waterfall stack total
             if (stackTotalGroup) {
@@ -156391,7 +156735,7 @@ class WaterfallSeries extends WaterfallSeries_ColumnSeries {
             if (!box || !prevBox) {
                 continue;
             }
-            const prevStack = yAxis.waterfall.stacks[this.stackKey], isPos = prevY > 0 ? -prevBox.height : 0;
+            const prevStack = yAxis.waterfall?.stacks[this.stackKey], isPos = prevY > 0 ? -prevBox.height : 0;
             if (prevStack && prevBox && box) {
                 const prevStackX = prevStack[i - 1];
                 // Y position of the connector is different when series are
@@ -156556,11 +156900,9 @@ class WaterfallSeries extends WaterfallSeries_ColumnSeries {
     // Extremes for a non-stacked series are recorded in processData.
     // In case of stacking, use Series.stackedYData to calculate extremes.
     getExtremes() {
-        const stacking = this.options.stacking;
-        let yAxis, waterfallStacks, stackedYNeg, stackedYPos;
-        if (stacking) {
-            yAxis = this.yAxis;
-            waterfallStacks = yAxis.waterfall.stacks;
+        const stacking = this.options.stacking, yAxis = this.yAxis, waterfallStacks = yAxis.waterfall?.stacks;
+        let stackedYNeg, stackedYPos;
+        if (stacking && waterfallStacks) {
             stackedYNeg = this.stackedYNeg = [];
             stackedYPos = this.stackedYPos = [];
             // The visible y range can be different when stacking is set to
@@ -156606,7 +156948,7 @@ WaterfallSeries_extend(WaterfallSeries.prototype, {
 });
 // Translate data points from raw values
 WaterfallSeries_addEvent(WaterfallSeries, 'afterColumnTranslate', function () {
-    const series = this, { options, points, yAxis } = series, minPointLength = WaterfallSeries_pick(options.minPointLength, 5), halfMinPointLength = minPointLength / 2, threshold = options.threshold || 0, stacking = options.stacking, actualStack = yAxis.waterfall.stacks[series.stackKey], processedYData = series.getColumn('y', true);
+    const series = this, { options, points, yAxis } = series, minPointLength = WaterfallSeries_pick(options.minPointLength, 5), halfMinPointLength = minPointLength / 2, threshold = options.threshold || 0, stacking = options.stacking, actualStack = yAxis.waterfall?.stacks[series.stackKey], processedYData = series.getColumn('y', true);
     let previousIntermediate = threshold, previousY = threshold, y, total, yPos, hPos;
     for (let i = 0; i < points.length; i++) {
         const point = points[i], yValue = processedYData[i], shapeArgs = point.shapeArgs, box = WaterfallSeries_extend({
@@ -156682,7 +157024,7 @@ WaterfallSeries_addEvent(WaterfallSeries, 'afterColumnTranslate', function () {
                 box.y = yAxis.translate(yPos, false, true, false, true);
                 box.height = Math.abs(box.y -
                     yAxis.translate(hPos, false, true, false, true));
-                const dummyStackItem = yAxis.waterfall.dummyStackItem;
+                const dummyStackItem = yAxis.waterfall?.dummyStackItem;
                 if (dummyStackItem) {
                     dummyStackItem.x = i;
                     dummyStackItem.label = actualStack[i].label;
@@ -156822,7 +157164,7 @@ __webpack_exports__ = __webpack_exports__["default"];
 });
 ;
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/color-axis
  * @requires highcharts
  *
@@ -159136,7 +159478,7 @@ class MapNavigation {
             // Check the mapNavigation buttons collision with exporting button
             // and translate the mapNavigation button if they overlap.
             const adjustMapNavBtn = function () {
-                const expBtnBBox = chart.exportingGroup?.getBBox();
+                const expBtnBBox = chart.exporting?.group?.getBBox();
                 if (expBtnBBox) {
                     const navBtnsBBox = mapNav.navButtonsGroup.getBBox();
                     // If buttons overlap
@@ -165997,8 +166339,8 @@ class BubblePoint extends BubblePoint_ScatterPoint {
                 0 :
             0) + size;
         if (this.series.chart.inverted) {
-            const pos = this.pos() || [0, 0], { xAxis, yAxis, chart } = this.series;
-            return chart.renderer.symbols.circle(xAxis.len - pos[1] - computedSize, yAxis.len - pos[0] - computedSize, computedSize * 2, computedSize * 2);
+            const pos = this.pos() || [0, 0], { xAxis, yAxis, chart } = this.series, diameter = computedSize * 2;
+            return chart.renderer.symbols.circle((xAxis?.len || 0) - pos[1] - computedSize, (yAxis?.len || 0) - pos[0] - computedSize, diameter, diameter);
         }
         return highcharts_Point_commonjs_highcharts_Point_commonjs2_highcharts_Point_root_Highcharts_Point_default().prototype.haloPath.call(this, 
         // #6067
@@ -167516,8 +167858,7 @@ const HeatmapSeriesDefaults = {
             /** @ignore-option */
             halo: false, // #3406, halo is disabled on heatmaps by default
             /**
-             * How much to brighten the point on interaction. Requires the
-             * main color to be defined in hex or rgb(a) format.
+             * How much to brighten the point on interaction.
              *
              * In styled mode, the hover brightening is by default replaced
              * with a fill-opacity set in the `.highcharts-point:hover`
@@ -168266,7 +168607,7 @@ highcharts_SeriesRegistry_commonjs_highcharts_SeriesRegistry_commonjs2_highchart
 
 ;// ./code/es-modules/masters/modules/map.src.js
 /**
- * @license Highmaps JS v12.2.0 (2025-04-07)
+ * @license Highmaps JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/map
  * @requires highcharts
  *
@@ -168317,7 +168658,7 @@ __webpack_exports__ = __webpack_exports__["default"];
 });
 ;
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/exporting
  * @requires highcharts
  *
@@ -168434,6 +168775,7 @@ var highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcha
 var highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default = /*#__PURE__*/__webpack_require__.n(highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_);
 // EXTERNAL MODULE: external {"amd":["highcharts/highcharts","Chart"],"commonjs":["highcharts","Chart"],"commonjs2":["highcharts","Chart"],"root":["Highcharts","Chart"]}
 var highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_ = __webpack_require__(960);
+var highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_default = /*#__PURE__*/__webpack_require__.n(highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_);
 ;// ./code/es-modules/Core/Chart/ChartNavigationComposition.js
 /**
  *
@@ -168526,6 +168868,169 @@ var ChartNavigationComposition;
  * */
 /* harmony default export */ const Chart_ChartNavigationComposition = (ChartNavigationComposition);
 
+;// ./code/es-modules/Extensions/DownloadURL.js
+/* *
+ *
+ *  (c) 2015-2025 Oystein Moseng
+ *
+ *  License: www.highcharts.com/license
+ *
+ *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
+ *
+ *  Mixin for downloading content in the browser
+ *
+ * */
+
+/* *
+ *
+ *  Imports
+ *
+ * */
+
+const { isSafari, win, win: { document: doc } } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+
+const { error } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+/* *
+ *
+ *  Constants
+ *
+ * */
+const domurl = win.URL || win.webkitURL || win;
+/* *
+ *
+ *  Functions
+ *
+ * */
+/**
+ * Convert base64 dataURL to Blob if supported, otherwise returns undefined.
+ *
+ * @private
+ * @function Highcharts.dataURLtoBlob
+ *
+ * @param {string} dataURL
+ * URL to convert.
+ *
+ * @return {string | undefined}
+ * Blob.
+ */
+function dataURLtoBlob(dataURL) {
+    const parts = dataURL
+        .replace(/filename=.*;/, '')
+        .match(/data:([^;]*)(;base64)?,([A-Z+\d\/]+)/i);
+    if (parts &&
+        parts.length > 3 &&
+        (win.atob) &&
+        win.ArrayBuffer &&
+        win.Uint8Array &&
+        win.Blob &&
+        (domurl.createObjectURL)) {
+        // Try to convert data URL to Blob
+        const binStr = win.atob(parts[3]), buf = new win.ArrayBuffer(binStr.length), binary = new win.Uint8Array(buf);
+        for (let i = 0; i < binary.length; ++i) {
+            binary[i] = binStr.charCodeAt(i);
+        }
+        return domurl
+            .createObjectURL(new win.Blob([binary], { 'type': parts[1] }));
+    }
+}
+/**
+ * Download a data URL in the browser. Can also take a blob as first param.
+ *
+ * @private
+ * @function Highcharts.downloadURL
+ *
+ * @param {string | global.URL} dataURL
+ * The dataURL/Blob to download.
+ * @param {string} filename
+ * The name of the resulting file (w/extension).
+ */
+function downloadURL(dataURL, filename) {
+    const nav = win.navigator, a = doc.createElement('a');
+    // IE specific blob implementation
+    // Don't use for normal dataURLs
+    if (typeof dataURL !== 'string' &&
+        !(dataURL instanceof String) &&
+        nav.msSaveOrOpenBlob) {
+        nav.msSaveOrOpenBlob(dataURL, filename);
+        return;
+    }
+    dataURL = '' + dataURL;
+    if (nav.userAgent.length > 1000 /* RegexLimits.shortLimit */) {
+        throw new Error('Input too long');
+    }
+    const // Some browsers have limitations for data URL lengths. Try to convert
+    // to Blob or fall back. Edge always needs that blob.
+    isOldEdgeBrowser = /Edge\/\d+/.test(nav.userAgent), 
+    // Safari on iOS needs Blob in order to download PDF
+    safariBlob = (isSafari &&
+        typeof dataURL === 'string' &&
+        dataURL.indexOf('data:application/pdf') === 0);
+    if (safariBlob || isOldEdgeBrowser || dataURL.length > 2000000) {
+        dataURL = dataURLtoBlob(dataURL) || '';
+        if (!dataURL) {
+            throw new Error('Failed to convert to blob');
+        }
+    }
+    // Try HTML5 download attr if supported
+    if (typeof a.download !== 'undefined') {
+        a.href = dataURL;
+        a.download = filename; // HTML5 download attribute
+        doc.body.appendChild(a);
+        a.click();
+        doc.body.removeChild(a);
+    }
+    else {
+        // No download attr, just opening data URI
+        try {
+            if (!win.open(dataURL, 'chart')) {
+                throw new Error('Failed to open window');
+            }
+        }
+        catch {
+            // If window.open failed, try location.href
+            win.location.href = dataURL;
+        }
+    }
+}
+/**
+ * Asynchronously downloads a script from a provided location.
+ *
+ * @private
+ * @function Highcharts.getScript
+ *
+ * @param {string} scriptLocation
+ * The location for the script to fetch.
+ */
+function getScript(scriptLocation) {
+    return new Promise((resolve, reject) => {
+        const head = doc.getElementsByTagName('head')[0], script = doc.createElement('script');
+        // Set type and location for the script
+        script.type = 'text/javascript';
+        script.src = scriptLocation;
+        // Resolve in case of a succesful script fetching
+        script.onload = () => {
+            resolve();
+        };
+        // Reject in case of fail
+        script.onerror = () => {
+            reject(error(`Error loading script ${scriptLocation}`));
+        };
+        // Append the newly created script
+        head.appendChild(script);
+    });
+}
+/* *
+ *
+ *  Default Export
+ *
+ * */
+const DownloadURL = {
+    dataURLtoBlob,
+    downloadURL,
+    getScript
+};
+/* harmony default export */ const Extensions_DownloadURL = (DownloadURL);
+
 ;// ./code/es-modules/Extensions/Exporting/ExportingDefaults.js
 /* *
  *
@@ -168574,7 +169079,7 @@ const exporting = {
     /**
      * Allows the end user to sort the data table by clicking on column headers.
      *
-     * @since 10.3.3
+     * @since     10.3.3
      * @apioption exporting.allowTableSorting
      */
     allowTableSorting: true,
@@ -168589,7 +169094,7 @@ const exporting = {
      *
      * @type      {boolean}
      * @default   false
-     * @since 12.0.0
+     * @since     12.0.0
      * @apioption exporting.applyStyleSheets
      */
     /**
@@ -168692,8 +169197,8 @@ const exporting = {
      * See [MDN](https://developer.mozilla.org/en-US/docs/Web/API/fetch)
      * for more information
      *
-     * @type {Object}
-     * @since 11.3.0
+     * @type      {Object}
+     * @since     11.3.0
      * @apioption exporting.fetchOptions
      */
     /**
@@ -168709,6 +169214,27 @@ const exporting = {
      * @since     5.0.0
      * @apioption exporting.libURL
      */
+    libURL: 'https://code.highcharts.com/12.3.0/lib/',
+    /**
+     * Whether the chart should be exported using the browser's built-in
+     * capabilities, allowing offline exports without requiring access to the
+     * Highcharts export server, or sent directly to the export server for
+     * processing and downloading.
+     *
+     * This option is different from `exporting.fallbackToExportServer`, which
+     * controls whether the export server should be used as a fallback only if
+     * the local export fails. In contrast, `exporting.local` explicitly defines
+     * which export method to use.
+     *
+     * @see [fallbackToExportServer](#exporting.fallbackToExportServer)
+     *
+     * @type      {boolean}
+     * @default   true
+     * @since 12.3.0
+     * @requires  modules/exporting
+     * @apioption exporting.local
+     */
+    local: true,
     /**
      * Analogous to [sourceWidth](#exporting.sourceWidth).
      *
@@ -168781,7 +169307,7 @@ const exporting = {
      * @sample {highcharts} highcharts/exporting/offline-download-pdffont/
      *         Download PDF in a language containing non-Latin characters.
      *
-     * @since 10.0.0
+     * @since    10.0.0
      * @requires modules/offline-exporting
      */
     pdfFont: {
@@ -168790,25 +169316,25 @@ const exporting = {
          * `bold` or `italic` are not defined, the `normal` font will be used
          * for those too.
          *
-         * @type string|undefined
+         * @type string | undefined
          */
         normal: void 0,
         /**
          * The TTF font file for bold text.
          *
-         * @type string|undefined
+         * @type string | undefined
          */
         bold: void 0,
         /**
          * The TTF font file for bold and italic text.
          *
-         * @type string|undefined
+         * @type string | undefined
          */
         bolditalic: void 0,
         /**
          * The TTF font file for italic text.
          *
-         * @type string|undefined
+         * @type string | undefined
          */
         italic: void 0
     },
@@ -168911,7 +169437,7 @@ const exporting = {
              * @sample highcharts/exporting/buttons-contextbutton-symbol-custom/
              *         Custom shape as symbol
              *
-             * @type  {Highcharts.SymbolKeyValue|"menu"|"menuball"|string}
+             * @type  {Highcharts.SymbolKeyValue | "menu" | "menuball" | string}
              * @since 2.0
              */
             symbol: 'menu',
@@ -168932,12 +169458,10 @@ const exporting = {
              * By default, there is the "View in full screen" and "Print" menu
              * items, plus one menu item for each of the available export types.
              *
-             * @sample {highcharts} highcharts/exporting/menuitemdefinitions/
+             * @sample highcharts/exporting/menuitemdefinitions/
              *         Menu item definitions
-             * @sample {highstock} highcharts/exporting/menuitemdefinitions/
-             *         Menu item definitions
-             * @sample {highmaps} highcharts/exporting/menuitemdefinitions/
-             *         Menu item definitions
+             * @sample highcharts/exporting/menuitemdefinitions-webp/
+             *         Adding a custom menu item for WebP export
              *
              * @type    {Array<string>}
              * @default ["viewFullscreen", "printChart", "separator", "downloadPNG", "downloadJPEG", "downloadSVG"]
@@ -168969,12 +169493,10 @@ const exporting = {
      * Custom text for the "exitFullScreen" can be set only in lang options
      * (it is not a separate button).
      *
-     * @sample {highcharts} highcharts/exporting/menuitemdefinitions/
+     * @sample highcharts/exporting/menuitemdefinitions/
      *         Menu item definitions
-     * @sample {highstock} highcharts/exporting/menuitemdefinitions/
-     *         Menu item definitions
-     * @sample {highmaps} highcharts/exporting/menuitemdefinitions/
-     *         Menu item definitions
+     * @sample highcharts/exporting/menuitemdefinitions-webp/
+     *         Adding a custom menu item for WebP export
      *
      *
      * @type    {Highcharts.Dictionary<Highcharts.ExportingMenuObject>}
@@ -168988,9 +169510,7 @@ const exporting = {
         viewFullscreen: {
             textKey: 'viewFullscreen',
             onclick: function () {
-                if (this.fullscreen) {
-                    this.fullscreen.toggle();
-                }
+                this.fullscreen?.toggle();
             }
         },
         /**
@@ -168999,7 +169519,7 @@ const exporting = {
         printChart: {
             textKey: 'printChart',
             onclick: function () {
-                this.print();
+                this.exporting?.print();
             }
         },
         /**
@@ -169013,8 +169533,8 @@ const exporting = {
          */
         downloadPNG: {
             textKey: 'downloadPNG',
-            onclick: function () {
-                this.exportChart();
+            onclick: async function () {
+                await this.exporting?.exportChart();
             }
         },
         /**
@@ -169022,8 +169542,8 @@ const exporting = {
          */
         downloadJPEG: {
             textKey: 'downloadJPEG',
-            onclick: function () {
-                this.exportChart({
+            onclick: async function () {
+                await this.exporting?.exportChart({
                     type: 'image/jpeg'
                 });
             }
@@ -169033,8 +169553,8 @@ const exporting = {
          */
         downloadPDF: {
             textKey: 'downloadPDF',
-            onclick: function () {
-                this.exportChart({
+            onclick: async function () {
+                await this.exporting?.exportChart({
                     type: 'application/pdf'
                 });
             }
@@ -169044,8 +169564,8 @@ const exporting = {
          */
         downloadSVG: {
             textKey: 'downloadSVG',
-            onclick: function () {
-                this.exportChart({
+            onclick: async function () {
+                await this.exporting?.exportChart({
                     type: 'image/svg+xml'
                 });
             }
@@ -169187,6 +169707,7 @@ const navigation = {
          *
          * @sample highcharts/title/widthadjust
          *         Adjust the spacing when using text button
+         *
          * @since 2.0
          */
         buttonSpacing: 5,
@@ -169223,7 +169744,7 @@ const navigation = {
          *
          * @type      boolean
          * @default   false
-         * @since 10.3.0
+         * @since     10.3.0
          * @apioption navigation.buttonOptions.useHTML
          */
         /**
@@ -169263,7 +169784,7 @@ const navigation = {
          * @sample highcharts/navigation/buttonoptions-symbolfill/
          *         Blue symbol stroke for one of the buttons
          *
-         * @type  {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+         * @type  {Highcharts.ColorString | Highcharts.GradientColorObject | Highcharts.PatternObject}
          * @since 2.0
          */
         symbolFill: "#666666" /* Palette.neutralColor60 */,
@@ -169303,7 +169824,7 @@ const navigation = {
             /**
              * The default fill exists only to capture hover events.
              *
-             * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+             * @type {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
              */
             fill: "#ffffff" /* Palette.backgroundColor */,
             /**
@@ -169313,7 +169834,7 @@ const navigation = {
             /**
              * Default stroke for the buttons.
              *
-             * @type      {Highcharts.ColorString}
+             * @type {Highcharts.ColorString}
              */
             stroke: 'none',
             /**
@@ -169572,7 +170093,7 @@ class Fullscreen {
          * the fullscreen mode.
          *
          * @name Highcharts.Fullscreen#isOpen
-         * @type {boolean|undefined}
+         * @type {boolean | undefined}
          * @since 8.0.1
          */
         this.isOpen = false;
@@ -169714,7 +170235,7 @@ class Fullscreen {
      * @requires modules/full-screen
      */
     setButtonText() {
-        const chart = this.chart, exportDivElements = chart.exportDivElements, exportingOptions = chart.options.exporting, menuItems = (exportingOptions &&
+        const chart = this.chart, exportDivElements = chart.exporting?.divElements, exportingOptions = chart.options.exporting, menuItems = (exportingOptions &&
             exportingOptions.buttons &&
             exportingOptions.buttons.contextButton.menuItems), lang = chart.options.lang;
         if (exportingOptions &&
@@ -169837,7 +170358,7 @@ class Fullscreen {
  * */
 
 
-const { win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { win: HttpUtilities_win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 
 const { discardElement, objectEach } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 /* *
@@ -169851,10 +170372,10 @@ const { discardElement, objectEach } = (highcharts_commonjs_highcharts_commonjs2
  * @function Highcharts.ajax
  *
  * @param {Highcharts.AjaxSettingsObject} settings
- *        The Ajax settings to use.
+ * The Ajax settings to use.
  *
- * @return {false|undefined}
- *         Returns false, if error occurred.
+ * @return {false | undefined}
+ * Returns false, if error occurred.
  */
 function ajax(settings) {
     const headers = {
@@ -169865,10 +170386,12 @@ function ajax(settings) {
     }, r = new XMLHttpRequest();
     /**
      * Private error handler.
+     *
      * @private
+     *
      * @param {XMLHttpRequest} xhr
      * Internal request object.
-     * @param {string|Error} err
+     * @param {string | Error} err
      * Occurred error.
      */
     function handleError(xhr, err) {
@@ -169924,11 +170447,12 @@ function ajax(settings) {
  * Get a JSON resource over XHR, also supporting CORS without preflight.
  *
  * @function Highcharts.getJSON
+ *
  * @param {string} url
- *        The URL to load.
+ * The URL to load.
  * @param {Function} success
- *        The success callback. For error handling, use the `Highcharts.ajax`
- *        function instead.
+ * The success callback. For error handling, use the `Highcharts.ajax` function
+ * instead.
  */
 function getJSON(url, success) {
     HttpUtilities.ajax({
@@ -169943,46 +170467,44 @@ function getJSON(url, success) {
     });
 }
 /**
- * The post utility
+ * The post utility.
  *
  * @private
  * @function Highcharts.post
  *
  * @param {string} url
- * Post URL
- *
+ * Post URL.
  * @param {Object} data
- * Post data
- *
+ * Post data.
  * @param {RequestInit} [fetchOptions]
- * Additional attributes for the post request
+ * Additional attributes for the post request.
  */
-/**
- *
- */
-function post(url, data, fetchOptions) {
-    const formData = new win.FormData();
-    // Add the data
-    objectEach(data, function (val, name) {
-        formData.append(name, val);
+async function post(url, data, fetchOptions) {
+    // Prepare a form to send the data
+    const formData = new HttpUtilities_win.FormData();
+    // Add the data to the form
+    objectEach(data, function (value, name) {
+        formData.append(name, value);
     });
     formData.append('b64', 'true');
-    const { filename, type } = data;
-    return win.fetch(url, {
+    // Send the POST
+    const response = await HttpUtilities_win.fetch(url, {
         method: 'POST',
         body: formData,
         ...fetchOptions
-    }).then((res) => {
-        if (res.ok) {
-            res.text().then((text) => {
-                const link = document.createElement('a');
-                link.href = `data:${type};base64,${text}`;
-                link.download = filename;
-                link.click();
-                discardElement(link);
-            });
-        }
     });
+    // Check the response
+    if (response.ok) {
+        // Get the text from the response
+        const text = await response.text();
+        // Prepare self-click link with the Base64 representation
+        const link = document.createElement('a');
+        link.href = `data:${data.type};base64,${text}`;
+        link.download = data.filename;
+        link.click();
+        // Remove the link
+        discardElement(link);
+    }
 }
 /* *
  *
@@ -170006,29 +170528,35 @@ const HttpUtilities = {
 * The payload to send.
 *
 * @name Highcharts.AjaxSettingsObject#data
-* @type {string|Highcharts.Dictionary<any>|undefined}
+* @type {string | Highcharts.Dictionary<any> | undefined}
 */ /**
 * The data type expected.
+*
 * @name Highcharts.AjaxSettingsObject#dataType
-* @type {"json"|"xml"|"text"|"octet"|undefined}
+* @type {"json" | "xml" | "text" | "octet" | undefined}
 */ /**
 * Function to call on error.
+*
 * @name Highcharts.AjaxSettingsObject#error
-* @type {Function|undefined}
+* @type {Function | undefined}
 */ /**
 * The headers; keyed on header name.
+*
 * @name Highcharts.AjaxSettingsObject#headers
-* @type {Highcharts.Dictionary<string>|undefined}
+* @type {Highcharts.Dictionary<string> | undefined}
 */ /**
 * Function to call on success.
+*
 * @name Highcharts.AjaxSettingsObject#success
-* @type {Function|undefined}
+* @type {Function | undefined}
 */ /**
 * The HTTP method to use. For example GET or POST.
+*
 * @name Highcharts.AjaxSettingsObject#type
-* @type {string|undefined}
+* @type {string | undefined}
 */ /**
 * The URL to call.
+*
 * @name Highcharts.AjaxSettingsObject#url
 * @type {string}
 */
@@ -170051,1153 +170579,198 @@ const HttpUtilities = {
 
 
 
-const { defaultOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { defaultOptions, setOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+
+const { downloadURL: Exporting_downloadURL, getScript: Exporting_getScript } = Extensions_DownloadURL;
 
 
 
 
-const { doc, SVG_NS, win: Exporting_win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { composed: Exporting_composed, doc: Exporting_doc, isFirefox, isMS, isSafari: Exporting_isSafari, SVG_NS, win: Exporting_win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 
 
-const { addEvent: Exporting_addEvent, css, createElement, discardElement: Exporting_discardElement, extend, find, fireEvent: Exporting_fireEvent, isObject, merge, objectEach: Exporting_objectEach, pick, removeEvent, splat, uniqueKey } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { addEvent: Exporting_addEvent, clearTimeout: Exporting_clearTimeout, createElement, css, discardElement: Exporting_discardElement, error: Exporting_error, extend, find, fireEvent: Exporting_fireEvent, isObject, merge, objectEach: Exporting_objectEach, pick, pushUnique: Exporting_pushUnique, removeEvent, splat, uniqueKey } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().allowedAttributes.push('data-z-index', 'fill-opacity', 'filter', 'preserveAspectRatio', 'rx', 'ry', 'stroke-dasharray', 'stroke-linejoin', 'stroke-opacity', 'text-anchor', 'transform', 'transform-origin', 'version', 'viewBox', 'visibility', 'xmlns', 'xmlns:xlink');
+highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().allowedTags.push('desc', 'clippath', 'fedropshadow', 'femorphology', 'g', 'image');
 /* *
  *
- *  Composition
+ *  Constants
  *
  * */
-var Exporting;
-(function (Exporting) {
+const Exporting_domurl = Exporting_win.URL || Exporting_win.webkitURL || Exporting_win;
+/* *
+ *
+ *  Class
+ *
+ * */
+/**
+ * The Exporting class provides methods for exporting charts to images. If the
+ * exporting module is loaded, this class is instantiated on the chart and
+ * available through the `chart.exporting` property. Read more about the
+ * [exporting module](https://www.highcharts.com/docs/export-module-overview).
+ *
+ * @class
+ * @name Highcharts.Exporting
+ *
+ * @param {Highcharts.Chart} chart
+ * The chart instance.
+ *
+ */
+class Exporting {
     /* *
      *
-     *  Declarations
+     *  Constructor
      *
      * */
+    constructor(chart, options) {
+        this.options = {};
+        this.chart = chart;
+        this.options = options;
+        this.btnCount = 0;
+        this.buttonOffset = 0;
+        this.divElements = [];
+        this.svgElements = [];
+    }
     /* *
      *
-     *  Constants
-     *
-     * */
-    // These CSS properties are not inlined. Remember camelCase.
-    const inlineDenylist = [
-        /-/, // In Firefox, both hyphened and camelCased names are listed
-        /^(clipPath|cssText|d|height|width)$/, // Full words
-        /^font$/, // More specific props are set
-        /[lL]ogical(Width|Height)$/,
-        /^parentRule$/,
-        /^(cssRules|ownerRules)$/, // #19516 read-only properties
-        /perspective/,
-        /TapHighlightColor/,
-        /^transition/,
-        /^length$/, // #7700
-        /^\d+$/ // #17538
-    ];
-    // These ones are translated to attributes rather than styles
-    const inlineToAttributes = [
-        'fill',
-        'stroke',
-        'strokeLinecap',
-        'strokeLinejoin',
-        'strokeWidth',
-        'textAnchor',
-        'x',
-        'y'
-    ];
-    Exporting.inlineAllowlist = [];
-    const unstyledElements = [
-        'clipPath',
-        'defs',
-        'desc'
-    ];
-    /* *
-     *
-     *  Variables
-     *
-     * */
-    let printingChart;
-    /* *
-     *
-     *  Functions
+     *  Static Functions
      *
      * */
     /**
-     * Add the export button to the chart, with options.
+     * Make hyphenated property names out of camelCase.
      *
      * @private
-     * @function Highcharts.Chart#addButton
-     * @param {Highcharts.NavigationButtonOptions} options
-     * @requires modules/exporting
-     */
-    function addButton(options) {
-        const chart = this, renderer = chart.renderer, btnOptions = merge(chart.options.navigation.buttonOptions, options), onclick = btnOptions.onclick, menuItems = btnOptions.menuItems, symbolSize = btnOptions.symbolSize || 12;
-        let symbol;
-        if (!chart.btnCount) {
-            chart.btnCount = 0;
-        }
-        // Keeps references to the button elements
-        if (!chart.exportDivElements) {
-            chart.exportDivElements = [];
-            chart.exportSVGElements = [];
-        }
-        if (btnOptions.enabled === false || !btnOptions.theme) {
-            return;
-        }
-        const theme = chart.styledMode ? {} : btnOptions.theme;
-        let callback;
-        if (onclick) {
-            callback = function (e) {
-                if (e) {
-                    e.stopPropagation();
-                }
-                onclick.call(chart, e);
-            };
-        }
-        else if (menuItems) {
-            callback = function (e) {
-                // Consistent with onclick call (#3495)
-                if (e) {
-                    e.stopPropagation();
-                }
-                chart.contextMenu(button.menuClassName, menuItems, button.translateX || 0, button.translateY || 0, button.width || 0, button.height || 0, button);
-                button.setState(2);
-            };
-        }
-        if (btnOptions.text && btnOptions.symbol) {
-            theme.paddingLeft = pick(theme.paddingLeft, 30);
-        }
-        else if (!btnOptions.text) {
-            extend(theme, {
-                width: btnOptions.width,
-                height: btnOptions.height,
-                padding: 0
-            });
-        }
-        const button = renderer
-            .button(btnOptions.text, 0, 0, callback, theme, void 0, void 0, void 0, void 0, btnOptions.useHTML)
-            .addClass(options.className)
-            .attr({
-            title: pick(chart.options.lang[btnOptions._titleKey || btnOptions.titleKey], '')
-        });
-        button.menuClassName = (options.menuClassName ||
-            'highcharts-menu-' + chart.btnCount++);
-        if (btnOptions.symbol) {
-            symbol = renderer
-                .symbol(btnOptions.symbol, Math.round((btnOptions.symbolX || 0) - (symbolSize / 2)), Math.round((btnOptions.symbolY || 0) - (symbolSize / 2)), symbolSize, symbolSize
-            // If symbol is an image, scale it (#7957)
-            , {
-                width: symbolSize,
-                height: symbolSize
-            })
-                .addClass('highcharts-button-symbol')
-                .attr({
-                zIndex: 1
-            })
-                .add(button);
-            if (!chart.styledMode) {
-                symbol.attr({
-                    stroke: btnOptions.symbolStroke,
-                    fill: btnOptions.symbolFill,
-                    'stroke-width': btnOptions.symbolStrokeWidth || 1
-                });
-            }
-        }
-        button
-            .add(chart.exportingGroup)
-            .align(extend(btnOptions, {
-            width: button.width,
-            x: pick(btnOptions.x, chart.buttonOffset) // #1654
-        }), true, 'spacingBox');
-        chart.buttonOffset += (((button.width || 0) + btnOptions.buttonSpacing) *
-            (btnOptions.align === 'right' ? -1 : 1));
-        chart.exportSVGElements.push(button, symbol);
-    }
-    /**
-     * Clean up after printing a chart.
+     * @static
+     * @function Highcharts.Exporting#hyphenate
      *
-     * @function Highcharts#afterPrint
-     *
-     * @private
-     *
-     * @param {Highcharts.Chart} chart
-     *        Chart that was (or suppose to be) printed
-     *
-     * @emits Highcharts.Chart#event:afterPrint
-     */
-    function afterPrint() {
-        const chart = this;
-        if (!chart.printReverseInfo) {
-            return void 0;
-        }
-        const { childNodes, origDisplay, resetParams } = chart.printReverseInfo;
-        // Put the chart back in
-        chart.moveContainers(chart.renderTo);
-        // Restore all body content
-        [].forEach.call(childNodes, function (node, i) {
-            if (node.nodeType === 1) {
-                node.style.display = (origDisplay[i] || '');
-            }
-        });
-        chart.isPrinting = false;
-        // Reset printMaxWidth
-        if (resetParams) {
-            chart.setSize.apply(chart, resetParams);
-        }
-        delete chart.printReverseInfo;
-        printingChart = void 0;
-        Exporting_fireEvent(chart, 'afterPrint');
-    }
-    /**
-     * Prepare chart and document before printing a chart.
-     *
-     * @function Highcharts#beforePrint
-     *
-     * @private
-     *
-     *
-     * @emits Highcharts.Chart#event:beforePrint
-     */
-    function beforePrint() {
-        const chart = this, body = doc.body, printMaxWidth = chart.options.exporting.printMaxWidth, printReverseInfo = {
-            childNodes: body.childNodes,
-            origDisplay: [],
-            resetParams: void 0
-        };
-        chart.isPrinting = true;
-        chart.pointer?.reset(void 0, 0);
-        Exporting_fireEvent(chart, 'beforePrint');
-        // Handle printMaxWidth
-        const handleMaxWidth = printMaxWidth &&
-            chart.chartWidth > printMaxWidth;
-        if (handleMaxWidth) {
-            printReverseInfo.resetParams = [
-                chart.options.chart.width,
-                void 0,
-                false
-            ];
-            chart.setSize(printMaxWidth, void 0, false);
-        }
-        // Hide all body content
-        [].forEach.call(printReverseInfo.childNodes, function (node, i) {
-            if (node.nodeType === 1) {
-                printReverseInfo.origDisplay[i] = node.style.display;
-                node.style.display = 'none';
-            }
-        });
-        // Pull out the chart
-        chart.moveContainers(body);
-        // Storage details for undo action after printing
-        chart.printReverseInfo = printReverseInfo;
-    }
-    /**
-     * @private
-     */
-    function chartCallback(chart) {
-        const composition = chart;
-        composition.renderExporting();
-        Exporting_addEvent(chart, 'redraw', composition.renderExporting);
-        // Destroy the export elements at chart destroy
-        Exporting_addEvent(chart, 'destroy', composition.destroyExport);
-        // Uncomment this to see a button directly below the chart, for quick
-        // testing of export
-        /*
-        let button, viewImage, viewSource;
-        if (!chart.renderer.forExport) {
-            viewImage = function () {
-                let div = doc.createElement('div');
-                div.innerHTML = chart.getSVGForExport();
-                chart.renderTo.parentNode.appendChild(div);
-            };
-
-            viewSource = function () {
-                let pre = doc.createElement('pre');
-                pre.innerHTML = chart.getSVGForExport()
-                    .replace(/</g, '\n&lt;')
-                    .replace(/>/g, '&gt;');
-                chart.renderTo.parentNode.appendChild(pre);
-            };
-
-            viewImage();
-
-            // View SVG Image
-            button = doc.createElement('button');
-            button.innerHTML = 'View SVG Image';
-            chart.renderTo.parentNode.appendChild(button);
-            button.onclick = viewImage;
-
-            // View SVG Source
-            button = doc.createElement('button');
-            button.innerHTML = 'View SVG Source';
-            chart.renderTo.parentNode.appendChild(button);
-            button.onclick = viewSource;
-        }
-        //*/
-    }
-    /**
-     * @private
-     */
-    function compose(ChartClass, SVGRendererClass) {
-        Exporting_ExportingSymbols.compose(SVGRendererClass);
-        Exporting_Fullscreen.compose(ChartClass);
-        const chartProto = ChartClass.prototype;
-        if (!chartProto.exportChart) {
-            chartProto.afterPrint = afterPrint;
-            chartProto.exportChart = exportChart;
-            chartProto.inlineStyles = inlineStyles;
-            chartProto.print = print;
-            chartProto.sanitizeSVG = sanitizeSVG;
-            chartProto.getChartHTML = getChartHTML;
-            chartProto.getSVG = getSVG;
-            chartProto.getSVGForExport = getSVGForExport;
-            chartProto.getFilename = getFilename;
-            chartProto.moveContainers = moveContainers;
-            chartProto.beforePrint = beforePrint;
-            chartProto.contextMenu = contextMenu;
-            chartProto.addButton = addButton;
-            chartProto.destroyExport = destroyExport;
-            chartProto.renderExporting = renderExporting;
-            chartProto.resolveCSSVariables = resolveCSSVariables;
-            chartProto.callbacks.push(chartCallback);
-            Exporting_addEvent(ChartClass, 'init', onChartInit);
-            Exporting_addEvent(ChartClass, 'layOutTitle', onChartLayOutTitle);
-            if ((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari) {
-                Exporting_win.matchMedia('print').addListener(function (mqlEvent) {
-                    if (!printingChart) {
-                        return void 0;
-                    }
-                    if (mqlEvent.matches) {
-                        printingChart.beforePrint();
-                    }
-                    else {
-                        printingChart.afterPrint();
-                    }
-                });
-            }
-            defaultOptions.exporting = merge(Exporting_ExportingDefaults.exporting, defaultOptions.exporting);
-            defaultOptions.lang = merge(Exporting_ExportingDefaults.lang, defaultOptions.lang);
-            // Buttons and menus are collected in a separate config option set
-            // called 'navigation'. This can be extended later to add control
-            // buttons like zoom and pan right click menus.
-            defaultOptions.navigation = merge(Exporting_ExportingDefaults.navigation, defaultOptions.navigation);
-        }
-    }
-    Exporting.compose = compose;
-    /**
-     * Display a popup menu for choosing the export type.
-     *
-     * @private
-     * @function Highcharts.Chart#contextMenu
-     * @param {string} className
-     *        An identifier for the menu.
-     * @param {Array<string|Highcharts.ExportingMenuObject>} items
-     *        A collection with text and onclicks for the items.
-     * @param {number} x
-     *        The x position of the opener button
-     * @param {number} y
-     *        The y position of the opener button
-     * @param {number} width
-     *        The width of the opener button
-     * @param {number} height
-     *        The height of the opener button
-     * @requires modules/exporting
-     */
-    function contextMenu(className, items, x, y, width, height, button) {
-        const chart = this, navOptions = chart.options.navigation, chartWidth = chart.chartWidth, chartHeight = chart.chartHeight, cacheName = 'cache-' + className, 
-        // For mouse leave detection
-        menuPadding = Math.max(width, height);
-        let innerMenu, menu = chart[cacheName];
-        // Create the menu only the first time
-        if (!menu) {
-            // Create a HTML element above the SVG
-            chart.exportContextMenu = chart[cacheName] = menu =
-                createElement('div', {
-                    className: className
-                }, {
-                    position: 'absolute',
-                    zIndex: 1000,
-                    padding: menuPadding + 'px',
-                    pointerEvents: 'auto',
-                    ...chart.renderer.style
-                }, chart.scrollablePlotArea?.fixedDiv || chart.container);
-            innerMenu = createElement('ul', { className: 'highcharts-menu' }, chart.styledMode ? {} : {
-                listStyle: 'none',
-                margin: 0,
-                padding: 0
-            }, menu);
-            // Presentational CSS
-            if (!chart.styledMode) {
-                css(innerMenu, extend({
-                    MozBoxShadow: '3px 3px 10px #888',
-                    WebkitBoxShadow: '3px 3px 10px #888',
-                    boxShadow: '3px 3px 10px #888'
-                }, navOptions.menuStyle));
-            }
-            // Hide on mouse out
-            menu.hideMenu = function () {
-                css(menu, { display: 'none' });
-                if (button) {
-                    button.setState(0);
-                }
-                chart.openMenu = false;
-                // #10361, #9998
-                css(chart.renderTo, { overflow: 'hidden' });
-                css(chart.container, { overflow: 'hidden' });
-                highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().clearTimeout(menu.hideTimer);
-                Exporting_fireEvent(chart, 'exportMenuHidden');
-            };
-            // Hide the menu some time after mouse leave (#1357)
-            chart.exportEvents.push(Exporting_addEvent(menu, 'mouseleave', function () {
-                menu.hideTimer = Exporting_win.setTimeout(menu.hideMenu, 500);
-            }), Exporting_addEvent(menu, 'mouseenter', function () {
-                highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().clearTimeout(menu.hideTimer);
-            }), 
-            // Hide it on clicking or touching outside the menu (#2258,
-            // #2335, #2407)
-            Exporting_addEvent(doc, 'mouseup', function (e) {
-                if (!chart.pointer?.inClass(e.target, className)) {
-                    menu.hideMenu();
-                }
-            }), Exporting_addEvent(menu, 'click', function () {
-                if (chart.openMenu) {
-                    menu.hideMenu();
-                }
-            }));
-            // Create the items
-            items.forEach(function (item) {
-                if (typeof item === 'string') {
-                    item = chart.options.exporting
-                        .menuItemDefinitions[item];
-                }
-                if (isObject(item, true)) {
-                    let element;
-                    if (item.separator) {
-                        element = createElement('hr', void 0, void 0, innerMenu);
-                    }
-                    else {
-                        // When chart initialized with the table, wrong button
-                        // text displayed, #14352.
-                        if (item.textKey === 'viewData' &&
-                            chart.isDataTableVisible) {
-                            item.textKey = 'hideData';
-                        }
-                        element = createElement('li', {
-                            className: 'highcharts-menu-item',
-                            onclick: function (e) {
-                                if (e) { // IE7
-                                    e.stopPropagation();
-                                }
-                                menu.hideMenu();
-                                if (typeof item !== 'string' && item.onclick) {
-                                    item.onclick.apply(chart, arguments);
-                                }
-                            }
-                        }, void 0, innerMenu);
-                        highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().setElementHTML(element, item.text ||
-                            chart.options.lang[item.textKey]);
-                        if (!chart.styledMode) {
-                            element.onmouseover = function () {
-                                css(this, navOptions.menuItemHoverStyle);
-                            };
-                            element.onmouseout = function () {
-                                css(this, navOptions.menuItemStyle);
-                            };
-                            css(element, extend({
-                                cursor: 'pointer'
-                            }, navOptions.menuItemStyle || {}));
-                        }
-                    }
-                    // Keep references to menu divs to be able to destroy them
-                    chart.exportDivElements.push(element);
-                }
-            });
-            // Keep references to menu and innerMenu div to be able to destroy
-            // them
-            chart.exportDivElements.push(innerMenu, menu);
-            chart.exportMenuWidth = menu.offsetWidth;
-            chart.exportMenuHeight = menu.offsetHeight;
-        }
-        const menuStyle = { display: 'block' };
-        // If outside right, right align it
-        if (x + (chart.exportMenuWidth || 0) > chartWidth) {
-            menuStyle.right = (chartWidth - x - width - menuPadding) + 'px';
-        }
-        else {
-            menuStyle.left = (x - menuPadding) + 'px';
-        }
-        // If outside bottom, bottom align it
-        if (y + height + (chart.exportMenuHeight || 0) > chartHeight &&
-            button.alignOptions?.verticalAlign !== 'top') {
-            menuStyle.bottom = (chartHeight - y - menuPadding) + 'px';
-        }
-        else {
-            menuStyle.top = (y + height - menuPadding) + 'px';
-        }
-        css(menu, menuStyle);
-        // #10361, #9998
-        css(chart.renderTo, { overflow: '' });
-        css(chart.container, { overflow: '' });
-        chart.openMenu = true;
-        Exporting_fireEvent(chart, 'exportMenuShown');
-    }
-    /**
-     * Destroy the export buttons.
-     * @private
-     * @function Highcharts.Chart#destroyExport
-     * @param {global.Event} [e]
-     * @requires modules/exporting
-     */
-    function destroyExport(e) {
-        const chart = e ? e.target : this, exportSVGElements = chart.exportSVGElements, exportDivElements = chart.exportDivElements, exportEvents = chart.exportEvents;
-        let cacheName;
-        // Destroy the extra buttons added
-        if (exportSVGElements) {
-            exportSVGElements.forEach((elem, i) => {
-                // Destroy and null the svg elements
-                if (elem) { // #1822
-                    elem.onclick = elem.ontouchstart = null;
-                    cacheName = 'cache-' + elem.menuClassName;
-                    if (chart[cacheName]) {
-                        delete chart[cacheName];
-                    }
-                    exportSVGElements[i] = elem.destroy();
-                }
-            });
-            exportSVGElements.length = 0;
-        }
-        // Destroy the exporting group
-        if (chart.exportingGroup) {
-            chart.exportingGroup.destroy();
-            delete chart.exportingGroup;
-        }
-        // Destroy the divs for the menu
-        if (exportDivElements) {
-            exportDivElements.forEach(function (elem, i) {
-                if (elem) {
-                    // Remove the event handler
-                    highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().clearTimeout(elem.hideTimer); // #5427
-                    removeEvent(elem, 'mouseleave');
-                    // Remove inline events
-                    // (chart.exportDivElements as any)[i] =
-                    exportDivElements[i] =
-                        elem.onmouseout =
-                            elem.onmouseover =
-                                elem.ontouchstart =
-                                    elem.onclick = null;
-                    // Destroy the div by moving to garbage bin
-                    Exporting_discardElement(elem);
-                }
-            });
-            exportDivElements.length = 0;
-        }
-        if (exportEvents) {
-            exportEvents.forEach(function (unbind) {
-                unbind();
-            });
-            exportEvents.length = 0;
-        }
-    }
-    /**
-     * Exporting module required. Submit an SVG version of the chart to a server
-     * along with some parameters for conversion.
-     *
-     * @sample highcharts/members/chart-exportchart/
-     *         Export with no options
-     * @sample highcharts/members/chart-exportchart-filename/
-     *         PDF type and custom filename
-     * @sample highcharts/members/chart-exportchart-custom-background/
-     *         Different chart background in export
-     * @sample stock/members/chart-exportchart/
-     *         Export with Highcharts Stock
-     *
-     * @function Highcharts.Chart#exportChart
-     *
-     * @param {Highcharts.ExportingOptions} exportingOptions
-     *        Exporting options in addition to those defined in
-     *        [exporting](https://api.highcharts.com/highcharts/exporting).
-     *
-     * @param {Highcharts.Options} chartOptions
-     *        Additional chart options for the exported chart. For example a
-     *        different background color can be added here, or `dataLabels` for
-     *        export only.
-     *
-     * @requires modules/exporting
-     */
-    function exportChart(exportingOptions, chartOptions) {
-        const svg = this.getSVGForExport(exportingOptions, chartOptions);
-        // Merge the options
-        exportingOptions = merge(this.options.exporting, exportingOptions);
-        // Do the post
-        Core_HttpUtilities.post(exportingOptions.url, {
-            filename: exportingOptions.filename ?
-                exportingOptions.filename.replace(/\//g, '-') :
-                this.getFilename(),
-            type: exportingOptions.type,
-            width: exportingOptions.width,
-            scale: exportingOptions.scale,
-            svg: svg
-        }, exportingOptions.fetchOptions);
-    }
-    /**
-     * Return the unfiltered innerHTML of the chart container. Used as hook for
-     * plugins. In styled mode, it also takes care of inlining CSS style rules.
-     *
-     * @see Chart#getSVG
-     *
-     * @function Highcharts.Chart#getChartHTML
+     * @param {string} property
+     * Property name in camelCase.
      *
      * @return {string}
-     * The unfiltered SVG of the chart.
+     * Hyphenated property name.
      *
      * @requires modules/exporting
      */
-    function getChartHTML(applyStyleSheets) {
-        if (applyStyleSheets) {
-            this.inlineStyles();
-        }
-        this.resolveCSSVariables();
-        return this.container.innerHTML;
-    }
-    /**
-     * Get the default file name used for exported charts. By default it creates
-     * a file name based on the chart title.
-     *
-     * @function Highcharts.Chart#getFilename
-     *
-     * @return {string} A file name without extension.
-     *
-     * @requires modules/exporting
-     */
-    function getFilename() {
-        const s = this.userOptions.title && this.userOptions.title.text;
-        let filename = this.options.exporting.filename;
-        if (filename) {
-            return filename.replace(/\//g, '-');
-        }
-        if (typeof s === 'string') {
-            filename = s
-                .toLowerCase()
-                .replace(/<\/?[^>]+(>|$)/g, '') // Strip HTML tags
-                .replace(/[\s_]+/g, '-')
-                .replace(/[^a-z\d\-]/g, '') // Preserve only latin
-                .replace(/^[\-]+/g, '') // Dashes in the start
-                .replace(/[\-]+/g, '-') // Dashes in a row
-                .substr(0, 24)
-                .replace(/[\-]+$/g, ''); // Dashes in the end;
-        }
-        if (!filename || filename.length < 5) {
-            filename = 'chart';
-        }
-        return filename;
-    }
-    /**
-     * Return an SVG representation of the chart.
-     *
-     * @sample highcharts/members/chart-getsvg/
-     *         View the SVG from a button
-     *
-     * @function Highcharts.Chart#getSVG
-     *
-     * @param {Highcharts.Options} [chartOptions]
-     *        Additional chart options for the generated SVG representation. For
-     *        collections like `xAxis`, `yAxis` or `series`, the additional
-     *        options is either merged in to the original item of the same
-     *        `id`, or to the first item if a common id is not found.
-     *
-     * @return {string}
-     *         The SVG representation of the rendered chart.
-     *
-     * @emits Highcharts.Chart#event:getSVG
-     *
-     * @requires modules/exporting
-     */
-    function getSVG(chartOptions) {
-        const chart = this;
-        let svg, seriesOptions, 
-        // Copy the options and add extra options
-        options = merge(chart.options, chartOptions);
-        // Use userOptions to make the options chain in series right (#3881)
-        options.plotOptions = merge(chart.userOptions.plotOptions, chartOptions && chartOptions.plotOptions);
-        // ... and likewise with time, avoid that undefined time properties are
-        // merged over legacy global time options
-        options.time = merge(chart.userOptions.time, chartOptions && chartOptions.time);
-        // Create a sandbox where a new chart will be generated
-        const sandbox = createElement('div', null, {
-            position: 'absolute',
-            top: '-9999em',
-            width: chart.chartWidth + 'px',
-            height: chart.chartHeight + 'px'
-        }, doc.body);
-        // Get the source size
-        const cssWidth = chart.renderTo.style.width, cssHeight = chart.renderTo.style.height, sourceWidth = options.exporting.sourceWidth ||
-            options.chart.width ||
-            (/px$/.test(cssWidth) && parseInt(cssWidth, 10)) ||
-            (options.isGantt ? 800 : 600), sourceHeight = options.exporting.sourceHeight ||
-            options.chart.height ||
-            (/px$/.test(cssHeight) && parseInt(cssHeight, 10)) ||
-            400;
-        // Override some options
-        extend(options.chart, {
-            animation: false,
-            renderTo: sandbox,
-            forExport: true,
-            renderer: 'SVGRenderer',
-            width: sourceWidth,
-            height: sourceHeight
-        });
-        options.exporting.enabled = false; // Hide buttons in print
-        delete options.data; // #3004
-        // prepare for replicating the chart
-        options.series = [];
-        chart.series.forEach(function (serie) {
-            seriesOptions = merge(serie.userOptions, {
-                animation: false, // Turn off animation
-                enableMouseTracking: false,
-                showCheckbox: false,
-                visible: serie.visible
-            });
-            // Used for the navigator series that has its own option set
-            if (!seriesOptions.isInternal) {
-                options.series.push(seriesOptions);
-            }
-        });
-        const colls = {};
-        chart.axes.forEach(function (axis) {
-            // Assign an internal key to ensure a one-to-one mapping (#5924)
-            if (!axis.userOptions.internalKey) { // #6444
-                axis.userOptions.internalKey = uniqueKey();
-            }
-            if (!axis.options.isInternal) {
-                if (!colls[axis.coll]) {
-                    colls[axis.coll] = true;
-                    options[axis.coll] = [];
-                }
-                options[axis.coll].push(merge(axis.userOptions, {
-                    visible: axis.visible,
-                    // Force some options that could have be set directly on
-                    // the axis while missing in the userOptions or options.
-                    type: axis.type,
-                    uniqueNames: axis.uniqueNames
-                }));
-            }
-        });
-        // Make sure the `colorAxis` object of the `defaultOptions` isn't used
-        // in the chart copy's user options, because a color axis should only be
-        // added when the user actually applies it.
-        options.colorAxis = chart.userOptions.colorAxis;
-        // Generate the chart copy
-        const chartCopy = new chart.constructor(options, chart.callback);
-        // Axis options and series options  (#2022, #3900, #5982)
-        if (chartOptions) {
-            ['xAxis', 'yAxis', 'series'].forEach(function (coll) {
-                const collOptions = {};
-                if (chartOptions[coll]) {
-                    collOptions[coll] = chartOptions[coll];
-                    chartCopy.update(collOptions);
-                }
-            });
-        }
-        // Reflect axis extremes in the export (#5924)
-        chart.axes.forEach(function (axis) {
-            const axisCopy = find(chartCopy.axes, (copy) => copy.options.internalKey === axis.userOptions.internalKey);
-            if (axisCopy) {
-                const extremes = axis.getExtremes(), 
-                // Make sure min and max overrides in the
-                // `exporting.chartOptions.xAxis` settings are reflected.
-                // These should override user-set extremes via zooming,
-                // scrollbar etc (#7873).
-                exportOverride = splat(chartOptions?.[axis.coll] || {})[0], userMin = 'min' in exportOverride ?
-                    exportOverride.min :
-                    extremes.userMin, userMax = 'max' in exportOverride ?
-                    exportOverride.max :
-                    extremes.userMax;
-                if (((typeof userMin !== 'undefined' &&
-                    userMin !== axisCopy.min) || (typeof userMax !== 'undefined' &&
-                    userMax !== axisCopy.max))) {
-                    axisCopy.setExtremes(userMin ?? void 0, userMax ?? void 0, true, false);
-                }
-            }
-        });
-        // Get the SVG from the container's innerHTML
-        svg = chartCopy.getChartHTML(chart.styledMode ||
-            options.exporting?.applyStyleSheets);
-        Exporting_fireEvent(this, 'getSVG', { chartCopy: chartCopy });
-        svg = chart.sanitizeSVG(svg, options);
-        // Free up memory
-        options = null;
-        chartCopy.destroy();
-        Exporting_discardElement(sandbox);
-        return svg;
-    }
-    /**
-     * @private
-     * @function Highcharts.Chart#getSVGForExport
-     */
-    function getSVGForExport(options, chartOptions) {
-        const chartExportingOptions = this.options.exporting;
-        return this.getSVG(merge({ chart: { borderRadius: 0 } }, chartExportingOptions.chartOptions, chartOptions, {
-            exporting: {
-                sourceWidth: ((options && options.sourceWidth) ||
-                    chartExportingOptions.sourceWidth),
-                sourceHeight: ((options && options.sourceHeight) ||
-                    chartExportingOptions.sourceHeight)
-            }
-        }));
-    }
-    /**
-     * Make hyphenated property names out of camelCase
-     * @private
-     * @param {string} prop
-     * Property name in camelCase
-     * @return {string}
-     * Hyphenated property name
-     */
-    function hyphenate(prop) {
-        return prop.replace(/[A-Z]/g, function (match) {
+    static hyphenate(property) {
+        return property.replace(/[A-Z]/g, function (match) {
             return '-' + match.toLowerCase();
         });
     }
     /**
-     * Analyze inherited styles from stylesheets and add them inline
+     * Get data:URL from image URL.
      *
      * @private
-     * @function Highcharts.Chart#inlineStyles
+     * @static
+     * @async
+     * @function Highcharts.Exporting#imageToDataURL
      *
-     * @todo What are the border styles for text about? In general, text has a
-     *       lot of properties.
-     *
-     * @todo Make it work with IE9 and IE10.
+     * @param {string} imageURL
+     * The address or URL of the image.
+     * @param {number} scale
+     * The scale of the image.
+     * @param {string} imageType
+     * The export type of the image.
      *
      * @requires modules/exporting
      */
-    function inlineStyles() {
-        const denylist = inlineDenylist, allowlist = Exporting.inlineAllowlist, // For IE
-        defaultStyles = {};
-        let dummySVG;
-        // Create an iframe where we read default styles without pollution from
-        // this body
-        const iframe = doc.createElement('iframe');
-        css(iframe, {
-            width: '1px',
-            height: '1px',
-            visibility: 'hidden'
-        });
-        doc.body.appendChild(iframe);
-        const iframeDoc = (iframe.contentWindow && iframe.contentWindow.document);
-        if (iframeDoc) {
-            iframeDoc.body.appendChild(iframeDoc.createElementNS(SVG_NS, 'svg'));
+    static async imageToDataURL(imageURL, scale, imageType) {
+        // First, wait for the image to be loaded
+        const img = await Exporting.loadImage(imageURL), canvas = Exporting_doc.createElement('canvas'), ctx = canvas?.getContext('2d');
+        if (!ctx) {
+            throw new Error('No canvas found!');
         }
-        /**
-         * Call this on all elements and recurse to children
-         * @private
-         * @param {Highcharts.HTMLDOMElement} node
-         *        Element child
-             */
-        function recurse(node) {
-            const filteredStyles = {};
-            let styles, parentStyles, dummy, denylisted, allowlisted, i;
-            /**
-             * Check computed styles and whether they are in the allow/denylist
-             * for styles or attributes.
-             * @private
-             * @param {string} val
-             *        Style value
-             * @param {string} prop
-             *        Style property name
-                     */
-            function filterStyles(val, prop) {
-                // Check against allowlist & denylist
-                denylisted = allowlisted = false;
-                if (allowlist.length) {
-                    // Styled mode in IE has a allowlist instead. Exclude all
-                    // props not in this list.
-                    i = allowlist.length;
-                    while (i-- && !allowlisted) {
-                        allowlisted = allowlist[i].test(prop);
-                    }
-                    denylisted = !allowlisted;
-                }
-                // Explicitly remove empty transforms
-                if (prop === 'transform' && val === 'none') {
-                    denylisted = true;
-                }
-                i = denylist.length;
-                while (i-- && !denylisted) {
-                    if (prop.length > 1000 /* RegexLimits.shortLimit */) {
-                        throw new Error('Input too long');
-                    }
-                    denylisted = (denylist[i].test(prop) ||
-                        typeof val === 'function');
-                }
-                if (!denylisted) {
-                    // If parent node has the same style, it gets inherited, no
-                    // need to inline it. Top-level props should be diffed
-                    // against parent (#7687).
-                    if ((parentStyles[prop] !== val ||
-                        node.nodeName === 'svg') &&
-                        defaultStyles[node.nodeName][prop] !== val) {
-                        // Attributes
-                        if (!inlineToAttributes ||
-                            inlineToAttributes.indexOf(prop) !== -1) {
-                            if (val) {
-                                node.setAttribute(hyphenate(prop), val);
-                            }
-                            // Styles
-                        }
-                        else {
-                            filteredStyles[prop] = val;
-                        }
-                    }
-                }
-            }
-            if (iframeDoc &&
-                node.nodeType === 1 &&
-                unstyledElements.indexOf(node.nodeName) === -1) {
-                styles = Exporting_win.getComputedStyle(node, null);
-                parentStyles = node.nodeName === 'svg' ?
-                    {} :
-                    Exporting_win.getComputedStyle(node.parentNode, null);
-                // Get default styles from the browser so that we don't have to
-                // add these
-                if (!defaultStyles[node.nodeName]) {
-                    /*
-                    If (!dummySVG) {
-                        dummySVG = doc.createElementNS(H.SVG_NS, 'svg');
-                        dummySVG.setAttribute('version', '1.1');
-                        doc.body.appendChild(dummySVG);
-                    }
-                    */
-                    dummySVG = iframeDoc.getElementsByTagName('svg')[0];
-                    dummy = iframeDoc.createElementNS(node.namespaceURI, node.nodeName);
-                    dummySVG.appendChild(dummy);
-                    // Get the defaults into a standard object (simple merge
-                    // won't do)
-                    const s = Exporting_win.getComputedStyle(dummy, null), defaults = {};
-                    for (const key in s) {
-                        if (key.length < 1000 /* RegexLimits.shortLimit */ &&
-                            typeof s[key] === 'string' &&
-                            !/^\d+$/.test(key)) {
-                            defaults[key] = s[key];
-                        }
-                    }
-                    defaultStyles[node.nodeName] = defaults;
-                    // Remove default fill, otherwise text disappears when
-                    // exported
-                    if (node.nodeName === 'text') {
-                        delete defaultStyles.text.fill;
-                    }
-                    dummySVG.removeChild(dummy);
-                }
-                // Loop through all styles and add them inline if they are ok
-                for (const p in styles) {
-                    if (
-                    // Some browsers put lots of styles on the prototype...
-                    (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isFirefox ||
-                        (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isMS ||
-                        (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari || // #16902
-                        // ... Chrome puts them on the instance
-                        Object.hasOwnProperty.call(styles, p)) {
-                        filterStyles(styles[p], p);
-                    }
-                }
-                // Apply styles
-                css(node, filteredStyles);
-                // Set default stroke width (needed at least for IE)
-                if (node.nodeName === 'svg') {
-                    node.setAttribute('stroke-width', '1px');
-                }
-                if (node.nodeName === 'text') {
-                    return;
-                }
-                // Recurse
-                [].forEach.call(node.children || node.childNodes, recurse);
-            }
+        else {
+            canvas.height = img.height * scale;
+            canvas.width = img.width * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            // Now we try to get the contents of the canvas
+            return canvas.toDataURL(imageType);
         }
-        /**
-         * Remove the dummy objects used to get defaults
-         * @private
-         */
-        function tearDown() {
-            dummySVG.parentNode.removeChild(dummySVG);
-            // Remove trash from DOM that stayed after each exporting
-            iframe.parentNode.removeChild(iframe);
-        }
-        recurse(this.container.querySelector('svg'));
-        tearDown();
     }
     /**
-     * Resolve CSS variables into hex colors
-     */
-    function resolveCSSVariables() {
-        const svgElements = this.container.querySelectorAll('*'), colorAttributes = ['color', 'fill', 'stop-color', 'stroke'];
-        Array.from(svgElements).forEach((element) => {
-            colorAttributes.forEach((attr) => {
-                const attrValue = element.getAttribute(attr);
-                if (attrValue?.includes('var(')) {
-                    element.setAttribute(attr, getComputedStyle(element).getPropertyValue(attr));
-                }
-            });
-        });
-    }
-    /**
-     * Move the chart container(s) to another div.
-     *
-     * @function Highcharts#moveContainers
+     * Loads an image from the provided URL.
      *
      * @private
+     * @static
+     * @function Highcharts.Exporting#loadImage
      *
-     * @param {Highcharts.HTMLDOMElement} moveTo
-     *        Move target
-     */
-    function moveContainers(moveTo) {
-        const { scrollablePlotArea } = this;
-        (
-        // When scrollablePlotArea is active (#9533)
-        scrollablePlotArea ?
-            [
-                scrollablePlotArea.fixedDiv,
-                scrollablePlotArea.scrollingContainer
-            ] :
-            [this.container]).forEach(function (div) {
-            moveTo.appendChild(div);
-        });
-    }
-    /**
-     * Add update methods to handle chart.update and chart.exporting.update and
-     * chart.navigation.update. These must be added to the chart instance rather
-     * than the Chart prototype in order to use the chart instance inside the
-     * update function.
-     * @private
-     */
-    function onChartInit() {
-        const chart = this, 
-        /**
-         * @private
-         * @param {"exporting"|"navigation"} prop
-         *        Property name in option root
-         * @param {Highcharts.ExportingOptions|Highcharts.NavigationOptions} options
-         *        Options to update
-         * @param {boolean} [redraw=true]
-         *        Whether to redraw
-                 */
-        update = (prop, options, redraw) => {
-            chart.isDirtyExporting = true;
-            merge(true, chart.options[prop], options);
-            if (pick(redraw, true)) {
-                chart.redraw();
-            }
-        };
-        chart.exporting = {
-            update: function (options, redraw) {
-                update('exporting', options, redraw);
-            }
-        };
-        // Register update() method for navigation. Cannot be set the same way
-        // as for exporting, because navigation options are shared with bindings
-        // which has separate update() logic.
-        Chart_ChartNavigationComposition
-            .compose(chart).navigation
-            .addUpdate((options, redraw) => {
-            update('navigation', options, redraw);
-        });
-    }
-    /**
-     * On layout of titles (title, subtitle and caption), adjust the `alignTo``
-     * box to avoid the context menu button.
-     * @private
-     */
-    function onChartLayOutTitle({ alignTo, key, textPxLength }) {
-        const exportingOptions = this.options.exporting, { align, buttonSpacing = 0, verticalAlign, width = 0 } = merge(this.options.navigation?.buttonOptions, exportingOptions?.buttons?.contextButton), space = alignTo.width - textPxLength, widthAdjust = width + buttonSpacing;
-        if ((exportingOptions?.enabled ?? true) &&
-            key === 'title' &&
-            align === 'right' &&
-            verticalAlign === 'top') {
-            if (space < 2 * widthAdjust) {
-                if (space < widthAdjust) {
-                    alignTo.width -= widthAdjust;
-                }
-                else if (this.title?.alignValue !== 'left') {
-                    alignTo.x -= widthAdjust - space / 2;
-                }
-            }
-        }
-    }
-    /**
-     * Exporting module required. Clears away other elements in the page and
-     * prints the chart as it is displayed. By default, when the exporting
-     * module is enabled, a context button with a drop down menu in the upper
-     * right corner accesses this function.
+     * @param {string} imageURL
+     * The address or URL of the image.
      *
-     * @sample highcharts/members/chart-print/
-     *         Print from a HTML button
-     *
-     * @function Highcharts.Chart#print
-     *
-     *
-     * @emits Highcharts.Chart#event:beforePrint
-     * @emits Highcharts.Chart#event:afterPrint
+     * @return {Promise<HTMLImageElement>}
+     * Returns a Promise that resolves with the loaded HTMLImageElement.
      *
      * @requires modules/exporting
      */
-    function print() {
-        const chart = this;
-        if (chart.isPrinting) { // Block the button while in printing mode
-            return;
-        }
-        printingChart = chart;
-        if (!(highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari) {
-            chart.beforePrint();
-        }
-        // Give the browser time to draw WebGL content, an issue that randomly
-        // appears (at least) in Chrome ~67 on the Mac (#8708).
-        setTimeout(() => {
-            Exporting_win.focus(); // #1510
-            Exporting_win.print();
-            // Allow the browser to prepare before reverting
-            if (!(highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari) {
+    static loadImage(imageURL) {
+        return new Promise((resolve, reject) => {
+            // Create an image
+            const image = new Exporting_win.Image();
+            // Must be set prior to loading image source
+            image.crossOrigin = 'Anonymous';
+            // Return the image in case of success
+            image.onload = () => {
+                // IE bug where image is not always ready despite load event
                 setTimeout(() => {
-                    chart.afterPrint();
-                }, 1000);
-            }
-        }, 1);
+                    resolve(image);
+                }, Exporting.loadEventDeferDelay);
+            };
+            // Reject in case of fail
+            image.onerror = (error) => {
+                reject(error);
+            };
+            // Provide the image URL
+            image.src = imageURL;
+        });
     }
     /**
-     * Add the buttons on chart load
-     * @private
-     * @function Highcharts.Chart#renderExporting
-     * @requires modules/exporting
-     */
-    function renderExporting() {
-        const chart = this, exportingOptions = chart.options.exporting, buttons = exportingOptions.buttons, isDirty = chart.isDirtyExporting || !chart.exportSVGElements;
-        chart.buttonOffset = 0;
-        if (chart.isDirtyExporting) {
-            chart.destroyExport();
-        }
-        if (isDirty && exportingOptions.enabled !== false) {
-            chart.exportEvents = [];
-            chart.exportingGroup = chart.exportingGroup ||
-                chart.renderer.g('exporting-group').attr({
-                    zIndex: 3 // #4955, // #8392
-                }).add();
-            Exporting_objectEach(buttons, function (button) {
-                chart.addButton(button);
-            });
-            chart.isDirtyExporting = false;
-        }
-    }
-    /**
-     * Exporting module only. A collection of fixes on the produced SVG to
-     * account for expand properties, browser bugs.
-     * Returns a cleaned SVG.
+     * Prepares and returns the image export options with default values where
+     * necessary.
      *
      * @private
-     * @function Highcharts.Chart#sanitizeSVG
-     * @param {string} svg
-     *        SVG code to sanitize
-     * @param {Highcharts.Options} options
-     *        Chart options to apply
-     * @return {string}
-     *         Sanitized SVG code
+     * @static
+     * @function Highcharts.Exporting#prepareImageOptions
+     *
+     * @param {Highcharts.ExportingOptions} exportingOptions
+     * The exporting options.
+     *
+     * @return {Exporting.ImageOptions}
+     * The finalized image export options with ensured values.
+     *
      * @requires modules/exporting
      */
-    function sanitizeSVG(svg, options) {
+    static prepareImageOptions(exportingOptions) {
+        const type = exportingOptions?.type || 'image/png', libURL = (exportingOptions?.libURL ||
+            defaultOptions.exporting?.libURL);
+        return {
+            type,
+            filename: ((exportingOptions?.filename || 'chart') +
+                '.' +
+                (type === 'image/svg+xml' ? 'svg' : type.split('/')[1])),
+            scale: exportingOptions?.scale || 1,
+            // Allow libURL to end with or without fordward slash
+            libURL: libURL?.slice(-1) !== '/' ? libURL + '/' : libURL
+        };
+    }
+    /**
+     * A collection of fixes on the produced SVG to account for expand
+     * properties and browser bugs. Returns a cleaned SVG.
+     *
+     * @private
+     * @static
+     * @function Highcharts.Exporting#sanitizeSVG
+     *
+     * @param {string} svg
+     * SVG code to sanitize.
+     * @param {Highcharts.Options} options
+     * Chart options to apply.
+     *
+     * @return {string}
+     * Sanitized SVG code.
+     *
+     * @requires modules/exporting
+     */
+    static sanitizeSVG(svg, options) {
         const split = svg.indexOf('</svg>') + 6, useForeignObject = svg.indexOf('<foreignObject') > -1;
         let html = svg.substr(split);
         // Remove any HTML added to the container after the SVG (#894, #9087)
@@ -171232,6 +170805,1509 @@ var Exporting;
             .replace(/&shy;/g, '\u00AD'); // Soft hyphen
         return svg;
     }
+    /**
+     * Get blob URL from SVG code. Falls back to normal data URI.
+     *
+     * @private
+     * @static
+     * @function Highcharts.Exporting#svgToDataURL
+     *
+     * @param {string} svg
+     * SVG to get the URL from.
+     *
+     * @return {string}
+     * The data URL.
+     *
+     * @requires modules/exporting
+     */
+    static svgToDataURL(svg) {
+        // Webkit and not chrome
+        const userAgent = Exporting_win.navigator.userAgent;
+        const webKit = (userAgent.indexOf('WebKit') > -1 &&
+            userAgent.indexOf('Chrome') < 0);
+        try {
+            // Safari requires data URI since it doesn't allow navigation to
+            // blob URLs. ForeignObjects also don't work well in Blobs in Chrome
+            // (#14780).
+            if (!webKit && svg.indexOf('<foreignObject') === -1) {
+                return Exporting_domurl.createObjectURL(new Exporting_win.Blob([svg], {
+                    type: 'image/svg+xml;charset-utf-16'
+                }));
+            }
+        }
+        catch {
+            // Ignore
+        }
+        return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+    }
+    /* *
+     *
+     *  Functions
+     *
+     * */
+    /**
+     * Add the export button to the chart, with options.
+     *
+     * @private
+     * @function Highcharts.Exporting#addButton
+     *
+     * @param {Highcharts.ExportingButtonOptions} options
+     * The exporting button options object.
+     *
+     * @requires modules/exporting
+     */
+    addButton(options) {
+        const exporting = this, chart = exporting.chart, renderer = chart.renderer, btnOptions = merge(chart.options.navigation?.buttonOptions, options), onclick = btnOptions.onclick, menuItems = btnOptions.menuItems, symbolSize = btnOptions.symbolSize || 12;
+        let symbol;
+        if (btnOptions.enabled === false || !btnOptions.theme) {
+            return;
+        }
+        const theme = chart.styledMode ? {} : btnOptions.theme;
+        let callback = (() => { });
+        if (onclick) {
+            callback = function (e) {
+                if (e) {
+                    e.stopPropagation();
+                }
+                onclick.call(chart, e);
+            };
+        }
+        else if (menuItems) {
+            callback = function (e) {
+                // Consistent with onclick call (#3495)
+                if (e) {
+                    e.stopPropagation();
+                }
+                exporting.contextMenu(button.menuClassName, menuItems, button.translateX || 0, button.translateY || 0, button.width || 0, button.height || 0, button);
+                button.setState(2);
+            };
+        }
+        if (btnOptions.text && btnOptions.symbol) {
+            theme.paddingLeft = pick(theme.paddingLeft, 30);
+        }
+        else if (!btnOptions.text) {
+            extend(theme, {
+                width: btnOptions.width,
+                height: btnOptions.height,
+                padding: 0
+            });
+        }
+        const button = renderer
+            .button(btnOptions.text || '', 0, 0, callback, theme, void 0, void 0, void 0, void 0, btnOptions.useHTML)
+            .addClass(options.className || '')
+            .attr({
+            title: pick(chart.options.lang[(btnOptions._titleKey ||
+                btnOptions.titleKey)], '')
+        });
+        button.menuClassName = (options.menuClassName ||
+            'highcharts-menu-' + exporting.btnCount++);
+        if (btnOptions.symbol) {
+            symbol = renderer
+                .symbol(btnOptions.symbol, Math.round((btnOptions.symbolX || 0) - (symbolSize / 2)), Math.round((btnOptions.symbolY || 0) - (symbolSize / 2)), symbolSize, symbolSize, 
+            // If symbol is an image, scale it (#7957)
+            {
+                width: symbolSize,
+                height: symbolSize
+            })
+                .addClass('highcharts-button-symbol')
+                .attr({
+                zIndex: 1
+            })
+                .add(button);
+            if (!chart.styledMode) {
+                symbol.attr({
+                    stroke: btnOptions.symbolStroke,
+                    fill: btnOptions.symbolFill,
+                    'stroke-width': btnOptions.symbolStrokeWidth || 1
+                });
+            }
+        }
+        button
+            .add(exporting.group)
+            .align(extend(btnOptions, {
+            width: button.width,
+            x: pick(btnOptions.x, exporting.buttonOffset) // #1654
+        }), true, 'spacingBox');
+        exporting.buttonOffset += (((button.width || 0) + (btnOptions.buttonSpacing || 0)) *
+            (btnOptions.align === 'right' ? -1 : 1));
+        exporting.svgElements.push(button, symbol);
+    }
+    /**
+     * Clean up after printing a chart.
+     *
+     * @private
+     * @function Highcharts.Exporting#afterPrint
+     *
+     * @emits Highcharts.Chart#event:afterPrint
+     *
+     * @requires modules/exporting
+     */
+    afterPrint() {
+        const chart = this.chart;
+        if (!this.printReverseInfo) {
+            return void 0;
+        }
+        const { childNodes, origDisplay, resetParams } = this.printReverseInfo;
+        // Put the chart back in
+        this.moveContainers(chart.renderTo);
+        // Restore all body content
+        [].forEach.call(childNodes, function (node, i) {
+            if (node.nodeType === 1) {
+                node.style.display = (origDisplay[i] || '');
+            }
+        });
+        this.isPrinting = false;
+        // Reset printMaxWidth
+        if (resetParams) {
+            chart.setSize.apply(chart, resetParams);
+        }
+        delete this.printReverseInfo;
+        Exporting.printingChart = void 0;
+        Exporting_fireEvent(chart, 'afterPrint');
+    }
+    /**
+     * Prepare chart and document before printing a chart.
+     *
+     * @private
+     * @function Highcharts.Exporting#beforePrint
+     *
+     * @emits Highcharts.Chart#event:beforePrint
+     *
+     * @requires modules/exporting
+     */
+    beforePrint() {
+        const chart = this.chart, body = Exporting_doc.body, printMaxWidth = this.options.printMaxWidth, printReverseInfo = {
+            childNodes: body.childNodes,
+            origDisplay: [],
+            resetParams: void 0
+        };
+        this.isPrinting = true;
+        chart.pointer?.reset(void 0, 0);
+        Exporting_fireEvent(chart, 'beforePrint');
+        // Handle printMaxWidth
+        if (printMaxWidth && chart.chartWidth > printMaxWidth) {
+            printReverseInfo.resetParams = [
+                chart.options.chart.width,
+                void 0,
+                false
+            ];
+            chart.setSize(printMaxWidth, void 0, false);
+        }
+        // Hide all body content
+        [].forEach.call(printReverseInfo.childNodes, function (node, i) {
+            if (node.nodeType === 1) {
+                printReverseInfo.origDisplay[i] = node.style.display;
+                node.style.display = 'none';
+            }
+        });
+        // Pull out the chart
+        this.moveContainers(body);
+        // Storage details for undo action after printing
+        this.printReverseInfo = printReverseInfo;
+    }
+    /**
+     * Display a popup menu for choosing the export type.
+     *
+     * @private
+     * @function Highcharts.Exporting#contextMenu
+     *
+     * @param {string} className
+     * An identifier for the menu.
+     * @param {Array<(string | Highcharts.ExportingMenuObject)>} items
+     * A collection with text and onclicks for the items.
+     * @param {number} x
+     * The x position of the opener button.
+     * @param {number} y
+     * The y position of the opener button.
+     * @param {number} width
+     * The width of the opener button.
+     * @param {number} height
+     * The height of the opener button.
+     * @param {SVGElement} button
+     * The SVG button element.
+     *
+     * @emits Highcharts.Chart#event:exportMenuHidden
+     * @emits Highcharts.Chart#event:exportMenuShown
+     *
+     * @requires modules/exporting
+     */
+    contextMenu(className, items, x, y, width, height, button) {
+        const exporting = this, chart = exporting.chart, navOptions = chart.options.navigation, chartWidth = chart.chartWidth, chartHeight = chart.chartHeight, cacheName = 'cache-' + className, 
+        // For mouse leave detection
+        menuPadding = Math.max(width, height);
+        let innerMenu, menu = chart[cacheName];
+        // Create the menu only the first time
+        if (!menu) {
+            // Create a HTML element above the SVG
+            exporting.contextMenuEl = chart[cacheName] = menu =
+                createElement('div', {
+                    className: className
+                }, {
+                    position: 'absolute',
+                    zIndex: 1000,
+                    padding: menuPadding + 'px',
+                    pointerEvents: 'auto',
+                    ...chart.renderer.style
+                }, chart.scrollablePlotArea?.fixedDiv || chart.container);
+            innerMenu = createElement('ul', { className: 'highcharts-menu' }, chart.styledMode ? {} : {
+                listStyle: 'none',
+                margin: 0,
+                padding: 0
+            }, menu);
+            // Presentational CSS
+            if (!chart.styledMode) {
+                css(innerMenu, extend({
+                    MozBoxShadow: '3px 3px 10px #0008',
+                    WebkitBoxShadow: '3px 3px 10px #0008',
+                    boxShadow: '3px 3px 10px #0008'
+                }, navOptions?.menuStyle || {}));
+            }
+            // Hide on mouse out
+            menu.hideMenu = function () {
+                css(menu, { display: 'none' });
+                if (button) {
+                    button.setState(0);
+                }
+                if (chart.exporting) {
+                    chart.exporting.openMenu = false;
+                }
+                // #10361, #9998
+                css(chart.renderTo, { overflow: 'hidden' });
+                css(chart.container, { overflow: 'hidden' });
+                Exporting_clearTimeout(menu.hideTimer);
+                Exporting_fireEvent(chart, 'exportMenuHidden');
+            };
+            // Hide the menu some time after mouse leave (#1357)
+            exporting.events?.push(Exporting_addEvent(menu, 'mouseleave', function () {
+                menu.hideTimer = Exporting_win.setTimeout(menu.hideMenu, 500);
+            }), Exporting_addEvent(menu, 'mouseenter', function () {
+                Exporting_clearTimeout(menu.hideTimer);
+            }), 
+            // Hide it on clicking or touching outside the menu (#2258,
+            // #2335, #2407)
+            Exporting_addEvent(Exporting_doc, 'mouseup', function (e) {
+                if (!chart.pointer?.inClass(e.target, className)) {
+                    menu.hideMenu();
+                }
+            }), Exporting_addEvent(menu, 'click', function () {
+                if (chart.exporting?.openMenu) {
+                    menu.hideMenu();
+                }
+            }));
+            // Create the items
+            items.forEach(function (item) {
+                if (typeof item === 'string') {
+                    if (exporting.options.menuItemDefinitions?.[item]) {
+                        item = exporting.options.menuItemDefinitions[item];
+                    }
+                }
+                if (isObject(item, true)) {
+                    let element;
+                    if (item.separator) {
+                        element = createElement('hr', void 0, void 0, innerMenu);
+                    }
+                    else {
+                        // When chart initialized with the table, wrong button
+                        // text displayed, #14352.
+                        if (item.textKey === 'viewData' &&
+                            exporting.isDataTableVisible) {
+                            item.textKey = 'hideData';
+                        }
+                        element = createElement('li', {
+                            className: 'highcharts-menu-item',
+                            onclick: function (e) {
+                                if (e) { // IE7
+                                    e.stopPropagation();
+                                }
+                                menu.hideMenu();
+                                if (typeof item !== 'string' && item.onclick) {
+                                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                                    item.onclick.apply(chart, arguments);
+                                }
+                            }
+                        }, void 0, innerMenu);
+                        highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().setElementHTML(element, item.text || chart.options.lang[item.textKey]);
+                        if (!chart.styledMode) {
+                            element.onmouseover = function () {
+                                css(this, navOptions?.menuItemHoverStyle || {});
+                            };
+                            element.onmouseout = function () {
+                                css(this, navOptions?.menuItemStyle || {});
+                            };
+                            css(element, extend({
+                                cursor: 'pointer'
+                            }, navOptions?.menuItemStyle || {}));
+                        }
+                    }
+                    // Keep references to menu divs to be able to destroy them
+                    exporting.divElements.push(element);
+                }
+            });
+            // Keep references to menu and innerMenu div to be able to destroy
+            // them
+            exporting.divElements.push(innerMenu, menu);
+            exporting.menuHeight = menu.offsetHeight;
+            exporting.menuWidth = menu.offsetWidth;
+        }
+        const menuStyle = { display: 'block' };
+        // If outside right, right align it
+        if (x + (exporting.menuWidth || 0) > chartWidth) {
+            menuStyle.right = (chartWidth - x - width - menuPadding) + 'px';
+        }
+        else {
+            menuStyle.left = (x - menuPadding) + 'px';
+        }
+        // If outside bottom, bottom align it
+        if (y + height + (exporting.menuHeight || 0) >
+            chartHeight &&
+            button.alignOptions?.verticalAlign !== 'top') {
+            menuStyle.bottom = (chartHeight - y - menuPadding) + 'px';
+        }
+        else {
+            menuStyle.top = (y + height - menuPadding) + 'px';
+        }
+        css(menu, menuStyle);
+        // #10361, #9998
+        css(chart.renderTo, { overflow: '' });
+        css(chart.container, { overflow: '' });
+        if (chart.exporting) {
+            chart.exporting.openMenu = true;
+        }
+        Exporting_fireEvent(chart, 'exportMenuShown');
+    }
+    /**
+     * Destroy the export buttons.
+     *
+     * @private
+     * @function Highcharts.Exporting#destroy
+     *
+     * @param {global.Event} [e]
+     * Event object.
+     *
+     * @requires modules/exporting
+     */
+    destroy(e) {
+        const exporting = this, chart = e ? e.target : exporting.chart, { divElements, events, svgElements } = exporting;
+        let cacheName;
+        // Destroy the extra buttons added
+        svgElements.forEach((elem, i) => {
+            // Destroy and null the svg elements
+            if (elem) { // #1822
+                elem.onclick = elem.ontouchstart = null;
+                cacheName = 'cache-' + elem.menuClassName;
+                if (chart[cacheName]) {
+                    delete chart[cacheName];
+                }
+                svgElements[i] = elem.destroy();
+            }
+        });
+        svgElements.length = 0;
+        // Destroy the exporting group
+        if (exporting.group) {
+            exporting.group.destroy();
+            delete exporting.group;
+        }
+        // Destroy the divs for the menu
+        divElements.forEach(function (elem, i) {
+            if (elem) {
+                // Remove the event handler
+                Exporting_clearTimeout(elem.hideTimer); // #5427
+                removeEvent(elem, 'mouseleave');
+                // Remove inline events
+                divElements[i] =
+                    elem.onmouseout =
+                        elem.onmouseover =
+                            elem.ontouchstart =
+                                elem.onclick = null;
+                // Destroy the div by moving to garbage bin
+                Exporting_discardElement(elem);
+            }
+        });
+        divElements.length = 0;
+        if (events) {
+            events.forEach(function (unbind) {
+                unbind();
+            });
+            events.length = 0;
+        }
+    }
+    /**
+     * Get data URL to an image of an SVG and call download on its options
+     * object:
+     *
+     * - **filename:** Name of resulting downloaded file without extension.
+     * Default is based on the chart title.
+     * - **type:** File type of resulting download. Default is `image/png`.
+     * - **scale:** Scaling factor of downloaded image compared to source.
+     * Default is `2`.
+     * - **libURL:** URL pointing to location of dependency scripts to download
+     * on demand. Default is the exporting.libURL option of the global
+     * Highcharts options pointing to our server.
+     *
+     * @async
+     * @private
+     * @function Highcharts.Exporting#downloadSVG
+     *
+     * @param {string} svg
+     * The generated SVG.
+     * @param {Highcharts.ExportingOptions} exportingOptions
+     * The exporting options.
+     *
+     * @requires modules/exporting
+     */
+    // eslint-disable-next-line @typescript-eslint/require-await
+    async downloadSVG(svg, exportingOptions) {
+        const eventArgs = {
+            svg,
+            exportingOptions,
+            exporting: this
+        };
+        // Fire a custom event before the export starts
+        Exporting_fireEvent(Exporting.prototype, 'downloadSVG', eventArgs);
+        // If the event was prevented, do not proceed with the export
+        if (eventArgs.defaultPrevented) {
+            return;
+        }
+        // Get the final image options
+        const { type, filename, scale, libURL } = Exporting.prepareImageOptions(exportingOptions);
+        let svgURL;
+        // Initiate download depending on file type
+        if (type === 'application/pdf') {
+            // Error in case of offline-exporting module is not loaded
+            throw new Error('Offline exporting logic for PDF type is not found.');
+        }
+        else if (type === 'image/svg+xml') {
+            // SVG download. In this case, we want to use Microsoft specific
+            // Blob if available
+            if (typeof Exporting_win.MSBlobBuilder !== 'undefined') {
+                const blob = new Exporting_win.MSBlobBuilder();
+                blob.append(svg);
+                svgURL = blob.getBlob('image/svg+xml');
+            }
+            else {
+                svgURL = Exporting.svgToDataURL(svg);
+            }
+            // Download the chart
+            Exporting_downloadURL(svgURL, filename);
+        }
+        else {
+            // PNG/JPEG download - create bitmap from SVG
+            svgURL = Exporting.svgToDataURL(svg);
+            try {
+                Exporting.objectURLRevoke = true;
+                // First, try to get PNG by rendering on canvas
+                const dataURL = await Exporting.imageToDataURL(svgURL, scale, type);
+                Exporting_downloadURL(dataURL, filename);
+            }
+            catch (error) {
+                // No need for the below logic to run in case no canvas is
+                // found
+                if (error.message === 'No canvas found!') {
+                    throw error;
+                }
+                // Or in case of exceeding the input length
+                if (svg.length > 100000000 /* RegexLimits.svgLimit */) {
+                    throw new Error('Input too long');
+                }
+                // Failed due to tainted canvas
+                // Create new and untainted canvas
+                const canvas = Exporting_doc.createElement('canvas'), ctx = canvas.getContext('2d'), matchedImageWidth = svg.match(
+                // eslint-disable-next-line max-len
+                /^<svg[^>]*\s{,1000}width\s{,1000}=\s{,1000}\"?(\d+)\"?[^>]*>/), matchedImageHeight = svg.match(
+                // eslint-disable-next-line max-len
+                /^<svg[^>]*\s{0,1000}height\s{,1000}=\s{,1000}\"?(\d+)\"?[^>]*>/);
+                if (ctx &&
+                    matchedImageWidth &&
+                    matchedImageHeight) {
+                    const imageWidth = +matchedImageWidth[1] * scale, imageHeight = +matchedImageHeight[1] * scale, downloadWithCanVG = () => {
+                        const v = Exporting_win.canvg.Canvg.fromString(ctx, svg);
+                        v.start();
+                        Exporting_downloadURL(Exporting_win.navigator.msSaveOrOpenBlob ?
+                            canvas.msToBlob() :
+                            canvas.toDataURL(type), filename);
+                    };
+                    canvas.width = imageWidth;
+                    canvas.height = imageHeight;
+                    // Must load canVG first if not found. Don't destroy the
+                    // object URL yet since we are doing things
+                    // asynchronously
+                    if (!Exporting_win.canvg) {
+                        Exporting.objectURLRevoke = true;
+                        await Exporting_getScript(libURL + 'canvg.js');
+                    }
+                    // Use loaded canvg
+                    downloadWithCanVG();
+                }
+            }
+            finally {
+                if (Exporting.objectURLRevoke) {
+                    try {
+                        Exporting_domurl.revokeObjectURL(svgURL);
+                    }
+                    catch {
+                        // Ignore
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * Submit an SVG version of the chart along with some parameters for local
+     * conversion (PNG, JPEG, and SVG) or conversion on a server (PDF).
+     *
+     * @sample highcharts/members/chart-exportchart/
+     * Export with no options
+     * @sample highcharts/members/chart-exportchart-filename/
+     * PDF type and custom filename
+     * @sample highcharts/exporting/menuitemdefinitions-webp/
+     * Export to WebP
+     * @sample highcharts/members/chart-exportchart-custom-background/
+     * Different chart background in export
+     * @sample stock/members/chart-exportchart/
+     * Export with Highcharts Stock
+     *
+     * @async
+     * @function Highcharts.Exporting#exportChart
+     *
+     * @param {Highcharts.ExportingOptions} [exportingOptions]
+     * Exporting options in addition to those defined in
+     * [exporting](https://api.highcharts.com/highcharts/exporting).
+     * @param {Highcharts.Options} [chartOptions]
+     * Additional chart options for the exported chart. For example a different
+     * background color can be added here, or `dataLabels` for export only.
+     *
+     * @requires modules/exporting
+     */
+    async exportChart(exportingOptions, chartOptions) {
+        // Merge the options
+        exportingOptions = merge(this.options, exportingOptions);
+        // If local if expected
+        if (exportingOptions.local) {
+            // Trigger the local export logic
+            await this.localExport(exportingOptions, chartOptions || {});
+        }
+        else {
+            // Get the SVG representation
+            const svg = this.getSVGForExport(exportingOptions, chartOptions);
+            // Do the post
+            if (exportingOptions.url) {
+                await Core_HttpUtilities.post(exportingOptions.url, {
+                    filename: exportingOptions.filename ?
+                        exportingOptions.filename.replace(/\//g, '-') :
+                        this.getFilename(),
+                    type: exportingOptions.type,
+                    width: exportingOptions.width,
+                    scale: exportingOptions.scale,
+                    svg
+                }, exportingOptions.fetchOptions);
+            }
+        }
+    }
+    /**
+     * Handles the fallback to the export server when a local export fails.
+     *
+     * @private
+     * @async
+     * @function Highcharts.Exporting#fallbackToServer
+     *
+     * @param {Highcharts.ExportingOptions} exportingOptions
+     * The exporting options.
+     * @param {Error} err
+     * The error that caused the local export to fail.
+     *
+     * @return {Promise<void>}
+     * A promise that resolves when the fallback process is complete.
+     *
+     * @requires modules/exporting
+     */
+    async fallbackToServer(exportingOptions, err) {
+        if (exportingOptions.fallbackToExportServer === false) {
+            if (exportingOptions.error) {
+                exportingOptions.error(exportingOptions, err);
+            }
+            else {
+                // Fallback disabled
+                Exporting_error(28, true);
+            }
+        }
+        else if (exportingOptions.type === 'application/pdf') {
+            // The local must be false to fallback to server for PDF export
+            exportingOptions.local = false;
+            // Allow fallbacking to server only for PDFs that failed locally
+            await this.exportChart(exportingOptions);
+        }
+    }
+    /**
+     * Return the unfiltered innerHTML of the chart container. Used as hook for
+     * plugins. In styled mode, it also takes care of inlining CSS style rules.
+     *
+     * @see Chart#getSVG
+     *
+     * @function Highcharts.Exporting#getChartHTML
+     *
+     * @param {boolean} [applyStyleSheets]
+     * whether or not to apply the style sheets.
+     *
+     * @return {string}
+     * The unfiltered SVG of the chart.
+     *
+     * @requires modules/exporting
+     */
+    getChartHTML(applyStyleSheets) {
+        const chart = this.chart;
+        if (applyStyleSheets) {
+            this.inlineStyles();
+        }
+        this.resolveCSSVariables();
+        return chart.container.innerHTML;
+    }
+    /**
+     * Get the default file name used for exported charts. By default it creates
+     * a file name based on the chart title.
+     *
+     * @function Highcharts.Exporting#getFilename
+     *
+     * @return {string}
+     * A file name without extension.
+     *
+     * @requires modules/exporting
+     */
+    getFilename() {
+        const titleText = this.chart.userOptions.title?.text;
+        let filename = this.options.filename;
+        if (filename) {
+            return filename.replace(/\//g, '-');
+        }
+        if (typeof titleText === 'string') {
+            filename = titleText
+                .toLowerCase()
+                .replace(/<\/?[^>]+(>|$)/g, '') // Strip HTML tags
+                .replace(/[\s_]+/g, '-')
+                .replace(/[^a-z\d\-]/g, '') // Preserve only latin
+                .replace(/^[\-]+/g, '') // Dashes in the start
+                .replace(/[\-]+/g, '-') // Dashes in a row
+                .substr(0, 24)
+                .replace(/[\-]+$/g, ''); // Dashes in the end;
+        }
+        if (!filename || filename.length < 5) {
+            filename = 'chart';
+        }
+        return filename;
+    }
+    /**
+     * Return an SVG representation of the chart.
+     *
+     * @sample highcharts/members/chart-getsvg/
+     * View the SVG from a button
+     *
+     * @function Highcharts.Exporting#getSVG
+     *
+     * @param {Highcharts.Options} [chartOptions]
+     * Additional chart options for the generated SVG representation. For
+     * collections like `xAxis`, `yAxis` or `series`, the additional options is
+     * either merged in to the original item of the same `id`, or to the first
+     * item if a common id is not found.
+     *
+     * @return {string}
+     * The SVG representation of the rendered chart.
+     *
+     * @emits Highcharts.Chart#event:getSVG
+     *
+     * @requires modules/exporting
+     */
+    getSVG(chartOptions) {
+        const chart = this.chart;
+        let svg, seriesOptions, 
+        // Copy the options and add extra options
+        options = merge(chart.options, chartOptions);
+        // Use userOptions to make the options chain in series right (#3881)
+        options.plotOptions = merge(chart.userOptions.plotOptions, chartOptions?.plotOptions);
+        // ... and likewise with time, avoid that undefined time properties are
+        // merged over legacy global time options
+        options.time = merge(chart.userOptions.time, chartOptions?.time);
+        // Create a sandbox where a new chart will be generated
+        const sandbox = createElement('div', void 0, {
+            position: 'absolute',
+            top: '-9999em',
+            width: chart.chartWidth + 'px',
+            height: chart.chartHeight + 'px'
+        }, Exporting_doc.body);
+        // Get the source size
+        const cssWidth = chart.renderTo.style.width, cssHeight = chart.renderTo.style.height, sourceWidth = options.exporting?.sourceWidth ||
+            options.chart.width ||
+            (/px$/.test(cssWidth) && parseInt(cssWidth, 10)) ||
+            (options.isGantt ? 800 : 600), sourceHeight = options.exporting?.sourceHeight ||
+            options.chart.height ||
+            (/px$/.test(cssHeight) && parseInt(cssHeight, 10)) ||
+            400;
+        // Override some options
+        extend(options.chart, {
+            animation: false,
+            renderTo: sandbox,
+            forExport: true,
+            renderer: 'SVGRenderer',
+            width: sourceWidth,
+            height: sourceHeight
+        });
+        if (options.exporting) {
+            options.exporting.enabled = false; // Hide buttons in print
+        }
+        delete options.data; // #3004
+        // Prepare for replicating the chart
+        options.series = [];
+        chart.series.forEach(function (serie) {
+            seriesOptions = merge(serie.userOptions, {
+                animation: false, // Turn off animation
+                enableMouseTracking: false,
+                showCheckbox: false,
+                visible: serie.visible
+            });
+            // Used for the navigator series that has its own option set
+            if (!seriesOptions.isInternal) {
+                options?.series?.push(seriesOptions);
+            }
+        });
+        const colls = {};
+        chart.axes.forEach(function (axis) {
+            // Assign an internal key to ensure a one-to-one mapping (#5924)
+            if (!axis.userOptions.internalKey) { // #6444
+                axis.userOptions.internalKey = uniqueKey();
+            }
+            if (options && !axis.options.isInternal) {
+                if (!colls[axis.coll]) {
+                    colls[axis.coll] = true;
+                    options[axis.coll] = [];
+                }
+                options[axis.coll].push(merge(axis.userOptions, {
+                    visible: axis.visible,
+                    // Force some options that could have be set directly on
+                    // the axis while missing in the userOptions or options.
+                    type: axis.type,
+                    uniqueNames: axis.uniqueNames
+                }));
+            }
+        });
+        // Make sure the `colorAxis` object of the `defaultOptions` isn't used
+        // in the chart copy's user options, because a color axis should only be
+        // added when the user actually applies it.
+        options.colorAxis = chart.userOptions.colorAxis;
+        // Generate the chart copy
+        const chartCopy = new chart.constructor(options, chart.callback);
+        // Axis options and series options  (#2022, #3900, #5982)
+        if (chartOptions) {
+            ['xAxis', 'yAxis', 'series'].forEach(function (coll) {
+                if (chartOptions[coll]) {
+                    chartCopy.update({
+                        [coll]: chartOptions[coll]
+                    });
+                }
+            });
+        }
+        // Reflect axis extremes in the export (#5924)
+        chart.axes.forEach(function (axis) {
+            const axisCopy = find(chartCopy.axes, (copy) => copy.options.internalKey === axis.userOptions.internalKey);
+            if (axisCopy) {
+                const extremes = axis.getExtremes(), 
+                // Make sure min and max overrides in the
+                // `exporting.chartOptions.xAxis` settings are reflected.
+                // These should override user-set extremes via zooming,
+                // scrollbar etc (#7873).
+                exportOverride = splat(chartOptions?.[axis.coll] || {})[0], userMin = 'min' in exportOverride ?
+                    exportOverride.min :
+                    extremes.userMin, userMax = 'max' in exportOverride ?
+                    exportOverride.max :
+                    extremes.userMax;
+                if (((typeof userMin !== 'undefined' &&
+                    userMin !== axisCopy.min) || (typeof userMax !== 'undefined' &&
+                    userMax !== axisCopy.max))) {
+                    axisCopy.setExtremes(userMin ?? void 0, userMax ?? void 0, true, false);
+                }
+            }
+        });
+        // Get the SVG from the container's innerHTML
+        svg = chartCopy.exporting?.getChartHTML(chart.styledMode ||
+            options.exporting?.applyStyleSheets) || '';
+        Exporting_fireEvent(chart, 'getSVG', { chartCopy: chartCopy });
+        svg = Exporting.sanitizeSVG(svg, options);
+        // Free up memory
+        options = void 0;
+        chartCopy.destroy();
+        Exporting_discardElement(sandbox);
+        return svg;
+    }
+    /**
+     * Gets the SVG for export using the getSVG function with additional
+     * options.
+     *
+     * @private
+     * @function Highcharts.Exporting#getSVGForExport
+     *
+     * @param {Highcharts.ExportingOptions} [exportingOptions]
+     * The exporting options.
+     * @param {Highcharts.Options} [chartOptions]
+     * Additional chart options for the exported chart.
+     *
+     * @return {string}
+     * The SVG representation of the rendered chart.
+     *
+     * @requires modules/exporting
+     */
+    getSVGForExport(exportingOptions, chartOptions) {
+        const currentExportingOptions = this.options;
+        return this.getSVG(merge({ chart: { borderRadius: 0 } }, currentExportingOptions.chartOptions, chartOptions, {
+            exporting: {
+                sourceWidth: (exportingOptions?.sourceWidth ||
+                    currentExportingOptions.sourceWidth),
+                sourceHeight: (exportingOptions?.sourceHeight ||
+                    currentExportingOptions.sourceHeight)
+            }
+        }));
+    }
+    /**
+     * Analyze inherited styles from stylesheets and add them inline.
+     *
+     * @private
+     * @function Highcharts.Exporting#inlineStyles
+     *
+     * @todo What are the border styles for text about? In general, text has a
+     * lot of properties.
+     *
+     * @todo Make it work with IE9 and IE10.
+     *
+     * @requires modules/exporting
+     */
+    inlineStyles() {
+        const denylist = Exporting.inlineDenylist, allowlist = Exporting.inlineAllowlist, // For IE
+        defaultStyles = {};
+        let dummySVG;
+        // Create an iframe where we read default styles without pollution from
+        // this body
+        const iframe = createElement('iframe', void 0, {
+            width: '1px',
+            height: '1px',
+            visibility: 'hidden'
+        }, Exporting_doc.body);
+        const iframeDoc = iframe.contentWindow?.document;
+        if (iframeDoc) {
+            iframeDoc.body.appendChild(iframeDoc.createElementNS(SVG_NS, 'svg'));
+        }
+        /**
+         * Call this on all elements and recurse to children.
+         *
+         * @private
+         * @function recurse
+         *
+         * @param {Highcharts.HTMLDOMElement | Highcharts.SVGSVGElement} node
+         * Element child.
+         */
+        function recurse(node) {
+            const filteredStyles = {};
+            let styles, parentStyles, dummy, denylisted, allowlisted, i;
+            /**
+             * Check computed styles and whether they are in the allow/denylist
+             * for styles or attributes.
+             *
+             * @private
+             * @function filterStyles
+             *
+             * @param {string | number | Highcharts.GradientColor | Highcharts.PatternObject | undefined} val
+             * Style value.
+             * @param {string} prop
+             * Style property name.
+             */
+            function filterStyles(val, prop) {
+                // Check against allowlist & denylist
+                denylisted = allowlisted = false;
+                if (allowlist.length) {
+                    // Styled mode in IE has a allowlist instead. Exclude all
+                    // props not in this list.
+                    i = allowlist.length;
+                    while (i-- && !allowlisted) {
+                        allowlisted = allowlist[i].test(prop);
+                    }
+                    denylisted = !allowlisted;
+                }
+                // Explicitly remove empty transforms
+                if (prop === 'transform' && val === 'none') {
+                    denylisted = true;
+                }
+                i = denylist.length;
+                while (i-- && !denylisted) {
+                    if (prop.length > 1000 /* RegexLimits.shortLimit */) {
+                        throw new Error('Input too long');
+                    }
+                    denylisted = (denylist[i].test(prop) ||
+                        typeof val === 'function');
+                }
+                if (!denylisted) {
+                    // If parent node has the same style, it gets inherited, no
+                    // need to inline it. Top-level props should be diffed
+                    // against parent (#7687).
+                    if ((parentStyles[prop] !== val ||
+                        node.nodeName === 'svg') &&
+                        (defaultStyles[node.nodeName])[prop] !== val) {
+                        // Attributes
+                        if (!Exporting.inlineToAttributes ||
+                            Exporting.inlineToAttributes.indexOf(prop) !== -1) {
+                            if (val) {
+                                node.setAttribute(Exporting.hyphenate(prop), val);
+                            }
+                            // Styles
+                        }
+                        else {
+                            filteredStyles[prop] = val;
+                        }
+                    }
+                }
+            }
+            if (iframeDoc &&
+                node.nodeType === 1 &&
+                Exporting.unstyledElements.indexOf(node.nodeName) === -1) {
+                styles =
+                    Exporting_win.getComputedStyle(node, null);
+                parentStyles = node.nodeName === 'svg' ?
+                    {} :
+                    Exporting_win.getComputedStyle(node.parentNode, null);
+                // Get default styles from the browser so that we don't have to
+                // add these
+                if (!defaultStyles[node.nodeName]) {
+                    /*
+                    If (!dummySVG) {
+                        dummySVG = doc.createElementNS(H.SVG_NS, 'svg');
+                        dummySVG.setAttribute('version', '1.1');
+                        doc.body.appendChild(dummySVG);
+                    }
+                    */
+                    dummySVG =
+                        iframeDoc.getElementsByTagName('svg')[0];
+                    dummy = iframeDoc.createElementNS(node.namespaceURI, node.nodeName);
+                    dummySVG.appendChild(dummy);
+                    // Get the defaults into a standard object (simple merge
+                    // won't do)
+                    const s = Exporting_win.getComputedStyle(dummy, null), defaults = {};
+                    for (const key in s) {
+                        if (key.length < 1000 /* RegexLimits.shortLimit */ &&
+                            typeof s[key] === 'string' &&
+                            !/^\d+$/.test(key)) {
+                            defaults[key] = s[key];
+                        }
+                    }
+                    defaultStyles[node.nodeName] = defaults;
+                    // Remove default fill, otherwise text disappears when
+                    // exported
+                    if (node.nodeName === 'text') {
+                        delete defaultStyles.text.fill;
+                    }
+                    dummySVG.removeChild(dummy);
+                }
+                // Loop through all styles and add them inline if they are ok
+                for (const p in styles) {
+                    if (
+                    // Some browsers put lots of styles on the prototype...
+                    isFirefox ||
+                        isMS ||
+                        Exporting_isSafari || // #16902
+                        // ... Chrome puts them on the instance
+                        Object.hasOwnProperty.call(styles, p)) {
+                        filterStyles(styles[p], p);
+                    }
+                }
+                // Apply styles
+                css(node, filteredStyles);
+                // Set default stroke width (needed at least for IE)
+                if (node.nodeName === 'svg') {
+                    node.setAttribute('stroke-width', '1px');
+                }
+                if (node.nodeName === 'text') {
+                    return;
+                }
+                // Recurse
+                [].forEach.call(node.children || node.childNodes, recurse);
+            }
+        }
+        /**
+         * Remove the dummy objects used to get defaults.
+         *
+         * @private
+         * @function tearDown
+         */
+        function tearDown() {
+            dummySVG.parentNode.removeChild(dummySVG);
+            // Remove trash from DOM that stayed after each exporting
+            iframe.parentNode.removeChild(iframe);
+        }
+        recurse(this.chart.container.querySelector('svg'));
+        tearDown();
+    }
+    /**
+     * Get SVG of chart prepared for client side export. This converts embedded
+     * images in the SVG to data URIs. It requires the regular exporting module.
+     * The options and chartOptions arguments are passed to the getSVGForExport
+     * function.
+     *
+     * @private
+     * @async
+     * @function Highcharts.Exporting#localExport
+     *
+     * @param {Highcharts.ExportingOptions} exportingOptions
+     * The exporting options.
+     * @param {Highcharts.Options} chartOptions
+     * Additional chart options for the exported chart.
+     *
+     * @return {Promise<string>}
+     * The sanitized SVG.
+     *
+     * @requires modules/exporting
+     */
+    async localExport(exportingOptions, chartOptions) {
+        const chart = this.chart, exporting = this, 
+        // After grabbing the SVG of the chart's copy container we need
+        // to do sanitation on the SVG
+        sanitize = (svg) => Exporting.sanitizeSVG(svg || '', chartCopyOptions), 
+        // Return true if the SVG contains images with external data.
+        // With the boost module there are `image` elements with encoded
+        // PNGs, these are supported by svg2pdf and should pass (#10243)
+        hasExternalImages = function () {
+            return [].some.call(chart.container.getElementsByTagName('image'), function (image) {
+                const href = image.getAttribute('href');
+                return (href !== '' &&
+                    typeof href === 'string' &&
+                    href.indexOf('data:') !== 0);
+            });
+        };
+        let chartCopyContainer, chartCopyOptions, href = null, images;
+        // If we are on IE and in styled mode, add an allowlist to the
+        // renderer for inline styles that we want to pass through. There
+        // are so many styles by default in IE that we don't want to
+        // denylist them all
+        if (isMS && chart.styledMode && !Exporting.inlineAllowlist.length) {
+            Exporting.inlineAllowlist.push(/^blockSize/, /^border/, /^caretColor/, /^color/, /^columnRule/, /^columnRuleColor/, /^cssFloat/, /^cursor/, /^fill$/, /^fillOpacity/, /^font/, /^inlineSize/, /^length/, /^lineHeight/, /^opacity/, /^outline/, /^parentRule/, /^rx$/, /^ry$/, /^stroke/, /^textAlign/, /^textAnchor/, /^textDecoration/, /^transform/, /^vectorEffect/, /^visibility/, /^x$/, /^y$/);
+        }
+        // Always fall back on:
+        // - MS browsers: Embedded images JPEG/PNG, or any PDF
+        // - Embedded images and PDF
+        if ((isMS &&
+            (exportingOptions.type === 'application/pdf' ||
+                chart.container.getElementsByTagName('image').length &&
+                    exportingOptions.type !== 'image/svg+xml')) || (exportingOptions.type === 'application/pdf' &&
+            hasExternalImages())) {
+            await this.fallbackToServer(exportingOptions, new Error('Image type not supported for this chart/browser.'));
+            return;
+        }
+        // Hook into getSVG to get a copy of the chart copy's container (#8273)
+        const unbindGetSVG = Exporting_addEvent(chart, 'getSVG', (e) => {
+            chartCopyOptions = e.chartCopy.options;
+            chartCopyContainer =
+                e.chartCopy.container.cloneNode(true);
+            images = chartCopyContainer && chartCopyContainer
+                .getElementsByTagName('image') || [];
+        });
+        try {
+            // Trigger hook to get chart copy
+            this.getSVGForExport(exportingOptions, chartOptions);
+            // Get the static array
+            const imagesArray = images ? Array.from(images) : [];
+            // Go through the images we want to embed
+            for (const image of imagesArray) {
+                href = image.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+                if (href) {
+                    Exporting.objectURLRevoke = false;
+                    const dataURL = await Exporting.imageToDataURL(href, exportingOptions?.scale || 1, exportingOptions?.type || 'image/png');
+                    // Change image href in chart copy
+                    image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataURL);
+                    // Hidden, boosted series have blank href (#10243)
+                }
+                else {
+                    image.parentNode.removeChild(image);
+                }
+            }
+            // Sanitize the SVG
+            const sanitizedSVG = sanitize(chartCopyContainer?.innerHTML);
+            // Use SVG of chart copy. If SVG contains foreignObjects PDF fails
+            // in all browsers and all exports except SVG will fail in IE, as
+            // both CanVG and svg2pdf choke on this. Gracefully fall back.
+            if (sanitizedSVG.indexOf('<foreignObject') > -1 &&
+                exportingOptions.type !== 'image/svg+xml' &&
+                (isMS ||
+                    exportingOptions.type === 'application/pdf')) {
+                throw new Error('Image type not supported for charts with embedded HTML');
+            }
+            else {
+                // Trigger SVG download
+                await exporting.downloadSVG(sanitizedSVG, extend({ filename: exporting.getFilename() }, exportingOptions));
+            }
+            // Return the sanitized SVG
+            return sanitizedSVG;
+        }
+        catch (error) {
+            await this.fallbackToServer(exportingOptions, error);
+        }
+        finally {
+            // Clean up
+            unbindGetSVG();
+        }
+    }
+    /**
+     * Move the chart container(s) to another div.
+     *
+     * @private
+     * @function Highcharts.Exporting#moveContainers
+     *
+     * @param {Highcharts.HTMLDOMElement} moveTo
+     * Move target.
+     *
+     * @requires modules/exporting
+     */
+    moveContainers(moveTo) {
+        const chart = this.chart, { scrollablePlotArea } = chart;
+        (
+        // When scrollablePlotArea is active (#9533)
+        scrollablePlotArea ?
+            [
+                scrollablePlotArea.fixedDiv,
+                scrollablePlotArea.scrollingContainer
+            ] :
+            [chart.container]).forEach(function (div) {
+            moveTo.appendChild(div);
+        });
+    }
+    /**
+     * Clears away other elements in the page and prints the chart as it is
+     * displayed. By default, when the exporting module is enabled, a context
+     * button with a drop down menu in the upper right corner accesses this
+     * function.
+     *
+     * @sample highcharts/members/chart-print/
+     * Print from a HTML button
+     *
+     * @function Highcharts.Exporting#print
+     *
+     * @emits Highcharts.Chart#event:beforePrint
+     * @emits Highcharts.Chart#event:afterPrint
+     *
+     * @requires modules/exporting
+     */
+    print() {
+        const chart = this.chart;
+        // Block the button while in printing mode
+        if (this.isPrinting) {
+            return;
+        }
+        Exporting.printingChart = chart;
+        if (!Exporting_isSafari) {
+            this.beforePrint();
+        }
+        // Give the browser time to draw WebGL content, an issue that randomly
+        // appears (at least) in Chrome ~67 on the Mac (#8708).
+        setTimeout(() => {
+            Exporting_win.focus(); // #1510
+            Exporting_win.print();
+            // Allow the browser to prepare before reverting
+            if (!Exporting_isSafari) {
+                setTimeout(() => {
+                    chart.exporting?.afterPrint();
+                }, 1000);
+            }
+        }, 1);
+    }
+    /**
+     * Add the buttons on chart load.
+     *
+     * @private
+     * @function Highcharts.Exporting#render
+     *
+     * @requires modules/exporting
+     */
+    render() {
+        const exporting = this, { chart, options } = exporting, isDirty = exporting?.isDirty || !exporting?.svgElements.length;
+        exporting.buttonOffset = 0;
+        if (exporting.isDirty) {
+            exporting.destroy();
+        }
+        if (isDirty && options.enabled !== false) {
+            exporting.events = [];
+            exporting.group || (exporting.group = chart.renderer.g('exporting-group').attr({
+                zIndex: 3 // #4955, // #8392
+            }).add());
+            Exporting_objectEach(options?.buttons, function (button) {
+                exporting.addButton(button);
+            });
+            exporting.isDirty = false;
+        }
+    }
+    /**
+     * Resolve CSS variables into hex colors.
+     *
+     * @private
+     * @function Highcharts.Exporting#resolveCSSVariables
+     *
+     * @requires modules/exporting
+     */
+    resolveCSSVariables() {
+        Array.from(this.chart.container.querySelectorAll('*')).forEach((element) => {
+            ['color', 'fill', 'stop-color', 'stroke'].forEach((prop) => {
+                const attrValue = element.getAttribute(prop);
+                if (attrValue?.includes('var(')) {
+                    element.setAttribute(prop, getComputedStyle(element).getPropertyValue(prop));
+                }
+                const styleValue = element.style?.[prop];
+                if (styleValue?.includes('var(')) {
+                    element.style[prop] =
+                        getComputedStyle(element).getPropertyValue(prop);
+                }
+            });
+        });
+    }
+    /**
+     * Updates the exporting object with the provided exporting options.
+     *
+     * @private
+     * @function Highcharts.Exporting#update
+     *
+     * @param {Highcharts.ExportingOptions} exportingOptions
+     * The exporting options to update with.
+     * @param {boolean} [redraw=true]
+     * Whether to redraw or not.
+     *
+     * @requires modules/exporting
+     */
+    update(exportingOptions, redraw) {
+        this.isDirty = true;
+        merge(true, this.options, exportingOptions);
+        if (pick(redraw, true)) {
+            this.chart.redraw();
+        }
+    }
+}
+/* *
+ *
+ *  Static Properties
+ *
+ * */
+Exporting.inlineAllowlist = [];
+// These CSS properties are not inlined. Remember camelCase.
+Exporting.inlineDenylist = [
+    /-/, // In Firefox, both hyphened and camelCased names are listed
+    /^(clipPath|cssText|d|height|width)$/, // Full words
+    /^font$/, // More specific props are set
+    /[lL]ogical(Width|Height)$/,
+    /^parentRule$/,
+    /^(cssRules|ownerRules)$/, // #19516 read-only properties
+    /perspective/,
+    /TapHighlightColor/,
+    /^transition/,
+    /^length$/, // #7700
+    /^\d+$/ // #17538
+];
+// These ones are translated to attributes rather than styles
+Exporting.inlineToAttributes = [
+    'fill',
+    'stroke',
+    'strokeLinecap',
+    'strokeLinejoin',
+    'strokeWidth',
+    'textAnchor',
+    'x',
+    'y'
+];
+// Milliseconds to defer image load event handlers to offset IE bug
+Exporting.loadEventDeferDelay = isMS ? 150 : 0;
+Exporting.unstyledElements = [
+    'clipPath',
+    'defs',
+    'desc'
+];
+/* *
+ *
+ *  Class Namespace
+ *
+ * */
+(function (Exporting) {
+    /* *
+     *
+     *  Declarations
+     *
+     * */
+    /* *
+     *
+     *  Functions
+     *
+     * */
+    /**
+     * Composition function.
+     *
+     * @private
+     * @function Highcharts.Exporting#compose
+     *
+     * @param {ChartClass} ChartClass
+     * Chart class.
+     * @param {SVGRendererClass} SVGRendererClass
+     * SVGRenderer class.
+     *
+     * @requires modules/exporting
+     */
+    function compose(ChartClass, SVGRendererClass) {
+        Exporting_ExportingSymbols.compose(SVGRendererClass);
+        Exporting_Fullscreen.compose(ChartClass);
+        // Check the composition registry for the Exporting
+        if (!Exporting_pushUnique(Exporting_composed, 'Exporting')) {
+            return;
+        }
+        // Adding wrappers for the deprecated functions
+        extend((highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_default()).prototype, {
+            exportChart: async function (exportingOptions, chartOptions) {
+                await this.exporting?.exportChart(exportingOptions, chartOptions);
+                return;
+            },
+            getChartHTML: function (applyStyleSheets) {
+                return this.exporting?.getChartHTML(applyStyleSheets);
+            },
+            getFilename: function () {
+                return this.exporting?.getFilename();
+            },
+            getSVG: function (chartOptions) {
+                return this.exporting?.getSVG(chartOptions);
+            },
+            print: function () {
+                return this.exporting?.print();
+            }
+        });
+        ChartClass.prototype.callbacks.push(chartCallback);
+        Exporting_addEvent(ChartClass, 'afterInit', onChartAfterInit);
+        Exporting_addEvent(ChartClass, 'layOutTitle', onChartLayOutTitle);
+        if (Exporting_isSafari) {
+            Exporting_win.matchMedia('print').addListener(function (mqlEvent) {
+                if (!Exporting.printingChart) {
+                    return void 0;
+                }
+                if (mqlEvent.matches) {
+                    Exporting.printingChart.exporting?.beforePrint();
+                }
+                else {
+                    Exporting.printingChart.exporting?.afterPrint();
+                }
+            });
+        }
+        // Update with defaults of the exporting module
+        setOptions(Exporting_ExportingDefaults);
+    }
+    Exporting.compose = compose;
+    /**
+     * Function that is added to the callbacks array that runs on chart load.
+     *
+     * @private
+     * @function Highcharts#chartCallback
+     *
+     * @param {Highcharts.Chart} chart
+     * The chart instance.
+     *
+     * @requires modules/exporting
+     */
+    function chartCallback(chart) {
+        const exporting = chart.exporting;
+        if (exporting) {
+            exporting.render();
+            // Add the exporting buttons on each chart redraw
+            Exporting_addEvent(chart, 'redraw', function () {
+                this.exporting?.render();
+            });
+            // Destroy the export elements at chart destroy
+            Exporting_addEvent(chart, 'destroy', function () {
+                this.exporting?.destroy();
+            });
+        }
+        // Uncomment this to see a button directly below the chart, for quick
+        // testing of export
+        // let button, viewImage, viewSource;
+        // if (!chart.renderer.forExport) {
+        //     viewImage = function (): void {
+        //         const div = doc.createElement('div');
+        //         div.innerHTML = chart.exporting?.getSVGForExport() || '';
+        //         chart.renderTo.parentNode.appendChild(div);
+        //     };
+        //     viewSource = function (): void {
+        //         const pre = doc.createElement('pre');
+        //         pre.innerHTML = chart.exporting?.getSVGForExport()
+        //             .replace(/</g, '\n&lt;')
+        //             .replace(/>/g, '&gt;') || '';
+        //         chart.renderTo.parentNode.appendChild(pre);
+        //     };
+        //     viewImage();
+        //     // View SVG Image
+        //     button = doc.createElement('button');
+        //     button.innerHTML = 'View SVG Image';
+        //     chart.renderTo.parentNode.appendChild(button);
+        //     button.onclick = viewImage;
+        //     // View SVG Source
+        //     button = doc.createElement('button');
+        //     button.innerHTML = 'View SVG Source';
+        //     chart.renderTo.parentNode.appendChild(button);
+        //     button.onclick = viewSource;
+        // }
+    }
+    /**
+     * Add update methods to handle chart.update and chart.exporting.update and
+     * chart.navigation.update. These must be added to the chart instance rather
+     * than the Chart prototype in order to use the chart instance inside the
+     * update function.
+     *
+     * @private
+     * @function Highcharts#onChartAfterInit
+     *
+     * @requires modules/exporting
+     */
+    function onChartAfterInit() {
+        const chart = this;
+        // Create the exporting instance
+        if (chart.options.exporting) {
+            /**
+             * Exporting object.
+             *
+             * @name Highcharts.Chart#exporting
+             * @type {Highcharts.Exporting}
+             */
+            chart.exporting = new Exporting(chart, chart.options.exporting);
+            // Register update() method for navigation. Cannot be set the same
+            // way as for exporting, because navigation options are shared with
+            // bindings which has separate update() logic.
+            Chart_ChartNavigationComposition
+                .compose(chart).navigation
+                .addUpdate((options, redraw) => {
+                if (chart.exporting) {
+                    chart.exporting.isDirty = true;
+                    merge(true, chart.options.navigation, options);
+                    if (pick(redraw, true)) {
+                        chart.redraw();
+                    }
+                }
+            });
+        }
+    }
+    /**
+     * On layout of titles (title, subtitle and caption), adjust the `alignTo`
+     * box to avoid the context menu button.
+     *
+     * @private
+     * @function Highcharts#onChartLayOutTitle
+     *
+     * @requires modules/exporting
+     */
+    function onChartLayOutTitle({ alignTo, key, textPxLength }) {
+        const exportingOptions = this.options.exporting, { align, buttonSpacing = 0, verticalAlign, width = 0 } = merge(this.options.navigation?.buttonOptions, exportingOptions?.buttons?.contextButton), space = alignTo.width - textPxLength, widthAdjust = width + buttonSpacing;
+        if ((exportingOptions?.enabled ?? true) &&
+            key === 'title' &&
+            align === 'right' &&
+            verticalAlign === 'top') {
+            if (space < 2 * widthAdjust) {
+                if (space < widthAdjust) {
+                    alignTo.width -= widthAdjust;
+                }
+                else if (this.title?.alignValue !== 'left') {
+                    alignTo.x -= widthAdjust - space / 2;
+                }
+            }
+        }
+    }
 })(Exporting || (Exporting = {}));
 /* *
  *
@@ -171251,10 +172327,9 @@ var Exporting;
  * @callback Highcharts.ExportingAfterPrintCallbackFunction
  *
  * @param {Highcharts.Chart} this
- *        The chart on which the event occurred.
- *
+ * The chart on which the event occurred.
  * @param {global.Event} event
- *        The event that occurred.
+ * The event that occurred.
  */
 /**
  * Gets fired before a chart is printed through the context menu item or the
@@ -171263,10 +172338,9 @@ var Exporting;
  * @callback Highcharts.ExportingBeforePrintCallbackFunction
  *
  * @param {Highcharts.Chart} this
- *        The chart on which the event occurred.
- *
+ * The chart on which the event occurred.
  * @param {global.Event} event
- *        The event that occurred.
+ * The event that occurred.
  */
 /**
  * Function to call if the offline-exporting module fails to export a chart on
@@ -171275,10 +172349,9 @@ var Exporting;
  * @callback Highcharts.ExportingErrorCallbackFunction
  *
  * @param {Highcharts.ExportingOptions} options
- *        The exporting options.
- *
+ * The exporting options.
  * @param {global.Error} err
- *        The error from the module.
+ * The error from the module.
  */
 /**
  * Definition for a menu item in the context menu.
@@ -171288,27 +172361,27 @@ var Exporting;
 * The text for the menu item.
 *
 * @name Highcharts.ExportingMenuObject#text
-* @type {string|undefined}
+* @type {string | undefined}
 */ /**
 * If internationalization is required, the key to a language string.
 *
 * @name Highcharts.ExportingMenuObject#textKey
-* @type {string|undefined}
+* @type {string | undefined}
 */ /**
 * The click handler for the menu item.
 *
 * @name Highcharts.ExportingMenuObject#onclick
-* @type {Highcharts.EventCallbackFunction<Highcharts.Chart>|undefined}
+* @type {Highcharts.EventCallbackFunction<Highcharts.Chart> | undefined}
 */ /**
 * Indicates a separator line instead of an item.
 *
 * @name Highcharts.ExportingMenuObject#separator
-* @type {boolean|undefined}
+* @type {boolean | undefined}
 */
 /**
  * Possible MIME types for exporting.
  *
- * @typedef {"image/png"|"image/jpeg"|"application/pdf"|"image/svg+xml"} Highcharts.ExportingMimeTypeValue
+ * @typedef {"image/png" | "image/jpeg" | "application/pdf" | "image/svg+xml"} Highcharts.ExportingMimeTypeValue
  */
 (''); // Keeps doclets above in transpiled file
 /* *
@@ -171321,12 +172394,12 @@ var Exporting;
  * `Chart.print` method.
  *
  * @sample highcharts/chart/events-beforeprint-afterprint/
- *         Rescale the chart to print
+ * Rescale the chart to print
  *
- * @type      {Highcharts.ExportingAfterPrintCallbackFunction}
- * @since     4.1.0
- * @context   Highcharts.Chart
- * @requires  modules/exporting
+ * @type {Highcharts.ExportingAfterPrintCallbackFunction}
+ * @since 4.1.0
+ * @context Highcharts.Chart
+ * @requires modules/exporting
  * @apioption chart.events.afterPrint
  */
 /**
@@ -171334,12 +172407,12 @@ var Exporting;
  * the `Chart.print` method.
  *
  * @sample highcharts/chart/events-beforeprint-afterprint/
- *         Rescale the chart to print
+ * Rescale the chart to print
  *
- * @type      {Highcharts.ExportingBeforePrintCallbackFunction}
- * @since     4.1.0
- * @context   Highcharts.Chart
- * @requires  modules/exporting
+ * @type {Highcharts.ExportingBeforePrintCallbackFunction}
+ * @since 4.1.0
+ * @context Highcharts.Chart
+ * @requires modules/exporting
  * @apioption chart.events.beforePrint
  */
 (''); // Keeps doclets above in transpiled file
@@ -171351,10 +172424,14 @@ var Exporting;
 
 
 const G = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+// Class
+G.Exporting = Exporting_Exporting;
+// Compatibility
 G.HttpUtilities = G.HttpUtilities || Core_HttpUtilities;
 G.ajax = G.HttpUtilities.ajax;
 G.getJSON = G.HttpUtilities.getJSON;
 G.post = G.HttpUtilities.post;
+// Compose
 Exporting_Exporting.compose(G.Chart, G.Renderer);
 /* harmony default export */ const exporting_src = ((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()));
 
@@ -171365,7 +172442,7 @@ __webpack_exports__ = __webpack_exports__["default"];
 });
 ;
 /**
- * @license Highcharts JS v12.2.0 (2025-04-07)
+ * @license Highcharts JS v12.3.0 (2025-06-21)
  * @module highcharts/modules/offline-exporting
  * @requires highcharts
  * @requires highcharts/modules/exporting
@@ -171378,24 +172455,17 @@ __webpack_exports__ = __webpack_exports__["default"];
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(root["_Highcharts"], root["_Highcharts"]["AST"], root["_Highcharts"]["Chart"], root["_Highcharts"]["HttpUtilities"]);
+		module.exports = factory(root["_Highcharts"], root["_Highcharts"]["AST"], root["_Highcharts"]["Chart"]);
 	else if(typeof define === 'function' && define.amd)
-		define("highcharts/modules/offline-exporting", ["highcharts/highcharts"], function (amd1) {return factory(amd1,amd1["AST"],amd1["Chart"],amd1["HttpUtilities"]);});
+		define("highcharts/modules/offline-exporting", ["highcharts/highcharts"], function (amd1) {return factory(amd1,amd1["AST"],amd1["Chart"]);});
 	else if(typeof exports === 'object')
-		exports["highcharts/modules/offline-exporting"] = factory(root["_Highcharts"], root["_Highcharts"]["AST"], root["_Highcharts"]["Chart"], root["_Highcharts"]["HttpUtilities"]);
+		exports["highcharts/modules/offline-exporting"] = factory(root["_Highcharts"], root["_Highcharts"]["AST"], root["_Highcharts"]["Chart"]);
 	else
-		root["Highcharts"] = factory(root["Highcharts"], root["Highcharts"]["AST"], root["Highcharts"]["Chart"], root["Highcharts"]["HttpUtilities"]);
-})(typeof window === 'undefined' ? this : window, (__WEBPACK_EXTERNAL_MODULE__944__, __WEBPACK_EXTERNAL_MODULE__660__, __WEBPACK_EXTERNAL_MODULE__960__, __WEBPACK_EXTERNAL_MODULE__156__) => {
+		root["Highcharts"] = factory(root["Highcharts"], root["Highcharts"]["AST"], root["Highcharts"]["Chart"]);
+})(typeof window === 'undefined' ? this : window, (__WEBPACK_EXTERNAL_MODULE__944__, __WEBPACK_EXTERNAL_MODULE__660__, __WEBPACK_EXTERNAL_MODULE__960__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
-
-/***/ 156:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__156__;
-
-/***/ }),
 
 /***/ 660:
 /***/ ((module) => {
@@ -171505,6 +172575,8 @@ var highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default 
  * */
 
 const { isSafari, win, win: { document: doc } } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+
+const { error } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 /* *
  *
  *  Constants
@@ -171518,12 +172590,15 @@ const domurl = win.URL || win.webkitURL || win;
  * */
 /**
  * Convert base64 dataURL to Blob if supported, otherwise returns undefined.
+ *
  * @private
  * @function Highcharts.dataURLtoBlob
+ *
  * @param {string} dataURL
- *        URL to convert
- * @return {string|undefined}
- *         Blob
+ * URL to convert.
+ *
+ * @return {string | undefined}
+ * Blob.
  */
 function dataURLtoBlob(dataURL) {
     const parts = dataURL
@@ -171550,11 +172625,11 @@ function dataURLtoBlob(dataURL) {
  *
  * @private
  * @function Highcharts.downloadURL
- * @param {string|global.URL} dataURL
- *        The dataURL/Blob to download
+ *
+ * @param {string | global.URL} dataURL
+ * The dataURL/Blob to download.
  * @param {string} filename
- *        The name of the resulting file (w/extension)
- * @return {void}
+ * The name of the resulting file (w/extension).
  */
 function downloadURL(dataURL, filename) {
     const nav = win.navigator, a = doc.createElement('a');
@@ -171604,6 +172679,33 @@ function downloadURL(dataURL, filename) {
         }
     }
 }
+/**
+ * Asynchronously downloads a script from a provided location.
+ *
+ * @private
+ * @function Highcharts.getScript
+ *
+ * @param {string} scriptLocation
+ * The location for the script to fetch.
+ */
+function getScript(scriptLocation) {
+    return new Promise((resolve, reject) => {
+        const head = doc.getElementsByTagName('head')[0], script = doc.createElement('script');
+        // Set type and location for the script
+        script.type = 'text/javascript';
+        script.src = scriptLocation;
+        // Resolve in case of a succesful script fetching
+        script.onload = () => {
+            resolve();
+        };
+        // Reject in case of fail
+        script.onerror = () => {
+            reject(error(`Error loading script ${scriptLocation}`));
+        };
+        // Append the newly created script
+        head.appendChild(script);
+    });
+}
 /* *
  *
  *  Default Export
@@ -171611,7 +172713,8 @@ function downloadURL(dataURL, filename) {
  * */
 const DownloadURL = {
     dataURLtoBlob,
-    downloadURL
+    downloadURL,
+    getScript
 };
 /* harmony default export */ const Extensions_DownloadURL = (DownloadURL);
 
@@ -171620,2710 +172723,7 @@ var highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcha
 var highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default = /*#__PURE__*/__webpack_require__.n(highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_);
 // EXTERNAL MODULE: external {"amd":["highcharts/highcharts","Chart"],"commonjs":["highcharts","Chart"],"commonjs2":["highcharts","Chart"],"root":["Highcharts","Chart"]}
 var highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_ = __webpack_require__(960);
-;// ./code/es-modules/Core/Chart/ChartNavigationComposition.js
-/**
- *
- *  (c) 2010-2025 Paweł Fus
- *
- *  License: www.highcharts.com/license
- *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
- *
- * */
-
-/* *
- *
- *  Composition
- *
- * */
-var ChartNavigationComposition;
-(function (ChartNavigationComposition) {
-    /* *
-     *
-     *  Declarations
-     *
-     * */
-    /* *
-     *
-     *  Functions
-     *
-     * */
-    /* eslint-disable valid-jsdoc */
-    /**
-     * @private
-     */
-    function compose(chart) {
-        if (!chart.navigation) {
-            chart.navigation = new Additions(chart);
-        }
-        return chart;
-    }
-    ChartNavigationComposition.compose = compose;
-    /* *
-     *
-     *  Class
-     *
-     * */
-    /**
-     * Initializes `chart.navigation` object which delegates `update()` methods
-     * to all other common classes (used in exporting and navigationBindings).
-     * @private
-     */
-    class Additions {
-        /* *
-         *
-         *  Constructor
-         *
-         * */
-        constructor(chart) {
-            this.updates = [];
-            this.chart = chart;
-        }
-        /* *
-         *
-         *  Functions
-         *
-         * */
-        /**
-         * Registers an `update()` method in the `chart.navigation` object.
-         *
-         * @private
-         * @param {UpdateFunction} updateFn
-         * The `update()` method that will be called in `chart.update()`.
-         */
-        addUpdate(updateFn) {
-            this.chart.navigation.updates.push(updateFn);
-        }
-        /**
-         * @private
-         */
-        update(options, redraw) {
-            this.updates.forEach((updateFn) => {
-                updateFn.call(this.chart, options, redraw);
-            });
-        }
-    }
-    ChartNavigationComposition.Additions = Additions;
-})(ChartNavigationComposition || (ChartNavigationComposition = {}));
-/* *
- *
- *  Default Export
- *
- * */
-/* harmony default export */ const Chart_ChartNavigationComposition = (ChartNavigationComposition);
-
-;// ./code/es-modules/Extensions/Exporting/ExportingDefaults.js
-/* *
- *
- *  (c) 2010-2025 Torstein Honsi
- *
- *  License: www.highcharts.com/license
- *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
- *
- * */
-
-
-const { isTouchDevice } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-/* *
- *
- *  API Options
- *
- * */
-// Add the export related options
-/**
- * Options for the exporting module. For an overview on the matter, see
- * [the docs](https://www.highcharts.com/docs/export-module/export-module-overview) and
- * read our [Fair Usage Policy](https://www.highcharts.com/docs/export-module/privacy-disclaimer-export).
- *
- * @requires     modules/exporting
- * @optionparent exporting
- */
-const exporting = {
-    /**
-     * Experimental setting to allow HTML inside the chart (added through
-     * the `useHTML` options), directly in the exported image. This allows
-     * you to preserve complicated HTML structures like tables or bi-directional
-     * text in exported charts.
-     *
-     * Disclaimer: The HTML is rendered in a `foreignObject` tag in the
-     * generated SVG. The official export server is based on PhantomJS,
-     * which supports this, but other SVG clients, like Batik, does not
-     * support it. This also applies to downloaded SVG that you want to
-     * open in a desktop client.
-     *
-     * @type      {boolean}
-     * @default   false
-     * @since     4.1.8
-     * @apioption exporting.allowHTML
-     */
-    /**
-     * Allows the end user to sort the data table by clicking on column headers.
-     *
-     * @since 10.3.3
-     * @apioption exporting.allowTableSorting
-     */
-    allowTableSorting: true,
-    /**
-     * Allow exporting a chart retaining any user-applied CSS.
-     *
-     * Note that this is is default behavior in [styledMode](#chart.styledMode).
-     *
-     * @see [styledMode](#chart.styledMode)
-     *
-     * @sample {highcharts} highcharts/exporting/apply-stylesheets/
-     *
-     * @type      {boolean}
-     * @default   false
-     * @since 12.0.0
-     * @apioption exporting.applyStyleSheets
-     */
-    /**
-     * Additional chart options to be merged into the chart before exporting to
-     * an image format. This does not apply to printing the chart via the export
-     * menu.
-     *
-     * For example, a common use case is to add data labels to improve
-     * readability of the exported chart, or to add a printer-friendly color
-     * scheme to exported PDFs.
-     *
-     * @sample {highcharts} highcharts/exporting/chartoptions-data-labels/
-     *         Added data labels
-     * @sample {highstock} highcharts/exporting/chartoptions-data-labels/
-     *         Added data labels
-     *
-     * @type      {Highcharts.Options}
-     * @apioption exporting.chartOptions
-     */
-    /**
-     * Whether to enable the exporting module. Disabling the module will
-     * hide the context button, but API methods will still be available.
-     *
-     * @sample {highcharts} highcharts/exporting/enabled-false/
-     *         Exporting module is loaded but disabled
-     * @sample {highstock} highcharts/exporting/enabled-false/
-     *         Exporting module is loaded but disabled
-     *
-     * @type      {boolean}
-     * @default   true
-     * @since     2.0
-     * @apioption exporting.enabled
-     */
-    /**
-     * Function to call if the offline-exporting module fails to export
-     * a chart on the client side, and [fallbackToExportServer](
-     * #exporting.fallbackToExportServer) is disabled. If left undefined, an
-     * exception is thrown instead. Receives two parameters, the exporting
-     * options, and the error from the module.
-     *
-     * @see [fallbackToExportServer](#exporting.fallbackToExportServer)
-     *
-     * @type      {Highcharts.ExportingErrorCallbackFunction}
-     * @since     5.0.0
-     * @requires  modules/exporting
-     * @requires  modules/offline-exporting
-     * @apioption exporting.error
-     */
-    /**
-     * Whether or not to fall back to the export server if the offline-exporting
-     * module is unable to export the chart on the client side. This happens for
-     * certain browsers, and certain features (e.g.
-     * [allowHTML](#exporting.allowHTML)), depending on the image type exporting
-     * to. For very complex charts, it is possible that export can fail in
-     * browsers that don't support Blob objects, due to data URL length limits.
-     * It is recommended to define the [exporting.error](#exporting.error)
-     * handler if disabling fallback, in order to notify users in case export
-     * fails.
-     *
-     * @type      {boolean}
-     * @default   true
-     * @since     4.1.8
-     * @requires  modules/exporting
-     * @requires  modules/offline-exporting
-     * @apioption exporting.fallbackToExportServer
-     */
-    /**
-     * The filename, without extension, to use for the exported chart.
-     *
-     * @sample {highcharts} highcharts/exporting/filename/
-     *         Custom file name
-     * @sample {highstock} highcharts/exporting/filename/
-     *         Custom file name
-     *
-     * @type      {string}
-     * @default   chart
-     * @since     2.0
-     * @apioption exporting.filename
-     */
-    /**
-     * Highcharts v11.2.0 and older. An object containing additional key value
-     * data for the POST form that sends the SVG to the export server. For
-     * example, a `target` can be set to make sure the generated image is
-     * received in another frame, or a custom `enctype` or `encoding` can be
-     * set.
-     *
-     * With Highcharts v11.3.0, the `fetch` API replaced the old HTML form. To
-     * modify the request, now use [fetchOptions](#exporting.fetchOptions)
-     * instead.
-     *
-     * @deprecated
-     * @type      {Highcharts.HTMLAttributes}
-     * @since     3.0.8
-     * @apioption exporting.formAttributes
-     */
-    /**
-     * Options for the fetch request used when sending the SVG to the export
-     * server.
-     *
-     * See [MDN](https://developer.mozilla.org/en-US/docs/Web/API/fetch)
-     * for more information
-     *
-     * @type {Object}
-     * @since 11.3.0
-     * @apioption exporting.fetchOptions
-     */
-    /**
-     * Path where Highcharts will look for export module dependencies to
-     * load on demand if they don't already exist on `window`. Should currently
-     * point to location of [CanVG](https://github.com/canvg/canvg) library,
-     * [jsPDF](https://github.com/parallax/jsPDF) and
-     * [svg2pdf.js](https://github.com/yWorks/svg2pdf.js), required for client
-     * side export in certain browsers.
-     *
-     * @type      {string}
-     * @default   https://code.highcharts.com/{version}/lib
-     * @since     5.0.0
-     * @apioption exporting.libURL
-     */
-    /**
-     * Analogous to [sourceWidth](#exporting.sourceWidth).
-     *
-     * @type      {number}
-     * @since     3.0
-     * @apioption exporting.sourceHeight
-     */
-    /**
-     * The width of the original chart when exported, unless an explicit
-     * [chart.width](#chart.width) is set, or a pixel width is set on the
-     * container. The width exported raster image is then multiplied by
-     * [scale](#exporting.scale).
-     *
-     * @sample {highcharts} highcharts/exporting/sourcewidth/
-     *         Source size demo
-     * @sample {highstock} highcharts/exporting/sourcewidth/
-     *         Source size demo
-     * @sample {highmaps} maps/exporting/sourcewidth/
-     *         Source size demo
-     *
-     * @type      {number}
-     * @since     3.0
-     * @apioption exporting.sourceWidth
-     */
-    /**
-     * The pixel width of charts exported to PNG or JPG. As of Highcharts
-     * 3.0, the default pixel width is a function of the [chart.width](
-     * #chart.width) or [exporting.sourceWidth](#exporting.sourceWidth) and the
-     * [exporting.scale](#exporting.scale).
-     *
-     * @sample {highcharts} highcharts/exporting/width/
-     *         Export to 200px wide images
-     * @sample {highstock} highcharts/exporting/width/
-     *         Export to 200px wide images
-     *
-     * @type      {number}
-     * @since     2.0
-     * @apioption exporting.width
-     */
-    /**
-     * Default MIME type for exporting if `chart.exportChart()` is called
-     * without specifying a `type` option. Possible values are `image/png`,
-     *  `image/jpeg`, `application/pdf` and `image/svg+xml`.
-     *
-     * @type  {Highcharts.ExportingMimeTypeValue}
-     * @since 2.0
-     */
-    type: 'image/png',
-    /**
-     * The URL for the server module converting the SVG string to an image
-     * format. By default this points to Highchart's free web service.
-     *
-     * @since 2.0
-     */
-    url: `https://export-svg.highcharts.com?v=${(highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).version}`,
-    /**
-     * Settings for a custom font for the exported PDF, when using the
-     * `offline-exporting` module. This is used for languages containing
-     * non-ASCII characters, like Chinese, Russian, Japanese etc.
-     *
-     * As described in the [jsPDF
-     * docs](https://github.com/parallax/jsPDF#use-of-unicode-characters--utf-8),
-     * the 14 standard fonts in PDF are limited to the ASCII-codepage.
-     * Therefore, in order to support other text in the exported PDF, one or
-     * more TTF font files have to be passed on to the exporting module.
-     *
-     * See more in [the
-     * docs](https://www.highcharts.com/docs/export-module/client-side-export).
-     *
-     * @sample {highcharts} highcharts/exporting/offline-download-pdffont/
-     *         Download PDF in a language containing non-Latin characters.
-     *
-     * @since 10.0.0
-     * @requires modules/offline-exporting
-     */
-    pdfFont: {
-        /**
-         * The TTF font file for normal `font-style`. If font variations like
-         * `bold` or `italic` are not defined, the `normal` font will be used
-         * for those too.
-         *
-         * @type string|undefined
-         */
-        normal: void 0,
-        /**
-         * The TTF font file for bold text.
-         *
-         * @type string|undefined
-         */
-        bold: void 0,
-        /**
-         * The TTF font file for bold and italic text.
-         *
-         * @type string|undefined
-         */
-        bolditalic: void 0,
-        /**
-         * The TTF font file for italic text.
-         *
-         * @type string|undefined
-         */
-        italic: void 0
-    },
-    /**
-     * When printing the chart from the menu item in the burger menu, if
-     * the on-screen chart exceeds this width, it is resized. After printing
-     * or cancelled, it is restored. The default width makes the chart
-     * fit into typical paper format. Note that this does not affect the
-     * chart when printing the web page as a whole.
-     *
-     * @since 4.2.5
-     */
-    printMaxWidth: 780,
-    /**
-     * Defines the scale or zoom factor for the exported image compared
-     * to the on-screen display. While for instance a 600px wide chart
-     * may look good on a website, it will look bad in print. The default
-     * scale of 2 makes this chart export to a 1200px PNG or JPG.
-     *
-     * @see [chart.width](#chart.width)
-     * @see [exporting.sourceWidth](#exporting.sourceWidth)
-     *
-     * @sample {highcharts} highcharts/exporting/scale/
-     *         Scale demonstrated
-     * @sample {highstock} highcharts/exporting/scale/
-     *         Scale demonstrated
-     * @sample {highmaps} maps/exporting/scale/
-     *         Scale demonstrated
-     *
-     * @since 3.0
-     */
-    scale: 2,
-    /**
-     * Options for the export related buttons, print and export. In addition
-     * to the default buttons listed here, custom buttons can be added.
-     * See [navigation.buttonOptions](#navigation.buttonOptions) for general
-     * options.
-     *
-     * @type     {Highcharts.Dictionary<*>}
-     * @requires modules/exporting
-     */
-    buttons: {
-        /**
-         * Options for the export button.
-         *
-         * In styled mode, export button styles can be applied with the
-         * `.highcharts-contextbutton` class.
-         *
-         * @declare  Highcharts.ExportingButtonsOptionsObject
-         * @extends  navigation.buttonOptions
-         * @requires modules/exporting
-         */
-        contextButton: {
-            /**
-             * A click handler callback to use on the button directly instead of
-             * the popup menu.
-             *
-             * @sample highcharts/exporting/buttons-contextbutton-onclick/
-             *         Skip the menu and export the chart directly
-             *
-             * @type      {Function}
-             * @since     2.0
-             * @apioption exporting.buttons.contextButton.onclick
-             */
-            /**
-             * See [navigation.buttonOptions.symbolFill](
-             * #navigation.buttonOptions.symbolFill).
-             *
-             * @type      {Highcharts.ColorString}
-             * @default   #666666
-             * @since     2.0
-             * @apioption exporting.buttons.contextButton.symbolFill
-             */
-            /**
-             * The horizontal position of the button relative to the `align`
-             * option.
-             *
-             * @type      {number}
-             * @default   -10
-             * @since     2.0
-             * @apioption exporting.buttons.contextButton.x
-             */
-            /**
-             * The class name of the context button.
-             */
-            className: 'highcharts-contextbutton',
-            /**
-             * The class name of the menu appearing from the button.
-             */
-            menuClassName: 'highcharts-contextmenu',
-            /**
-             * The symbol for the button. Points to a definition function in
-             * the `Highcharts.Renderer.symbols` collection. The default
-             * `menu` function is part of the exporting module. Possible
-             * values are "circle", "square", "diamond", "triangle",
-             * "triangle-down", "menu", "menuball" or custom shape.
-             *
-             * @sample highcharts/exporting/buttons-contextbutton-symbol/
-             *         Use a circle for symbol
-             * @sample highcharts/exporting/buttons-contextbutton-symbol-custom/
-             *         Custom shape as symbol
-             *
-             * @type  {Highcharts.SymbolKeyValue|"menu"|"menuball"|string}
-             * @since 2.0
-             */
-            symbol: 'menu',
-            /**
-             * The key to a [lang](#lang) option setting that is used for the
-             * button's title tooltip. When the key is `contextButtonTitle`, it
-             * refers to [lang.contextButtonTitle](#lang.contextButtonTitle)
-             * that defaults to "Chart context menu".
-             *
-             * @since 6.1.4
-             */
-            titleKey: 'contextButtonTitle',
-            /**
-             * A collection of strings pointing to config options for the menu
-             * items. The config options are defined in the
-             * `menuItemDefinitions` option.
-             *
-             * By default, there is the "View in full screen" and "Print" menu
-             * items, plus one menu item for each of the available export types.
-             *
-             * @sample {highcharts} highcharts/exporting/menuitemdefinitions/
-             *         Menu item definitions
-             * @sample {highstock} highcharts/exporting/menuitemdefinitions/
-             *         Menu item definitions
-             * @sample {highmaps} highcharts/exporting/menuitemdefinitions/
-             *         Menu item definitions
-             *
-             * @type    {Array<string>}
-             * @default ["viewFullscreen", "printChart", "separator", "downloadPNG", "downloadJPEG", "downloadSVG"]
-             * @since   2.0
-             */
-            menuItems: [
-                'viewFullscreen',
-                'printChart',
-                'separator',
-                'downloadPNG',
-                'downloadJPEG',
-                'downloadSVG'
-            ]
-        }
-    },
-    /**
-     * An object consisting of definitions for the menu items in the context
-     * menu. Each key value pair has a `key` that is referenced in the
-     * [menuItems](#exporting.buttons.contextButton.menuItems) setting,
-     * and a `value`, which is an object with the following properties:
-     *
-     * - **onclick:** The click handler for the menu item
-     *
-     * - **text:** The text for the menu item
-     *
-     * - **textKey:** If internationalization is required, the key to a language
-     *   string
-     *
-     * Custom text for the "exitFullScreen" can be set only in lang options
-     * (it is not a separate button).
-     *
-     * @sample {highcharts} highcharts/exporting/menuitemdefinitions/
-     *         Menu item definitions
-     * @sample {highstock} highcharts/exporting/menuitemdefinitions/
-     *         Menu item definitions
-     * @sample {highmaps} highcharts/exporting/menuitemdefinitions/
-     *         Menu item definitions
-     *
-     *
-     * @type    {Highcharts.Dictionary<Highcharts.ExportingMenuObject>}
-     * @default {"viewFullscreen": {}, "printChart": {}, "separator": {}, "downloadPNG": {}, "downloadJPEG": {}, "downloadPDF": {}, "downloadSVG": {}}
-     * @since   5.0.13
-     */
-    menuItemDefinitions: {
-        /**
-         * @ignore
-         */
-        viewFullscreen: {
-            textKey: 'viewFullscreen',
-            onclick: function () {
-                if (this.fullscreen) {
-                    this.fullscreen.toggle();
-                }
-            }
-        },
-        /**
-         * @ignore
-         */
-        printChart: {
-            textKey: 'printChart',
-            onclick: function () {
-                this.print();
-            }
-        },
-        /**
-         * @ignore
-         */
-        separator: {
-            separator: true
-        },
-        /**
-         * @ignore
-         */
-        downloadPNG: {
-            textKey: 'downloadPNG',
-            onclick: function () {
-                this.exportChart();
-            }
-        },
-        /**
-         * @ignore
-         */
-        downloadJPEG: {
-            textKey: 'downloadJPEG',
-            onclick: function () {
-                this.exportChart({
-                    type: 'image/jpeg'
-                });
-            }
-        },
-        /**
-         * @ignore
-         */
-        downloadPDF: {
-            textKey: 'downloadPDF',
-            onclick: function () {
-                this.exportChart({
-                    type: 'application/pdf'
-                });
-            }
-        },
-        /**
-         * @ignore
-         */
-        downloadSVG: {
-            textKey: 'downloadSVG',
-            onclick: function () {
-                this.exportChart({
-                    type: 'image/svg+xml'
-                });
-            }
-        }
-    }
-};
-// Add language
-/**
- * @optionparent lang
- */
-const lang = {
-    /**
-     * Exporting module only. The text for the menu item to view the chart
-     * in full screen.
-     *
-     * @since 8.0.1
-     */
-    viewFullscreen: 'View in full screen',
-    /**
-     * Exporting module only. The text for the menu item to exit the chart
-     * from full screen.
-     *
-     * @since 8.0.1
-     */
-    exitFullscreen: 'Exit from full screen',
-    /**
-     * Exporting module only. The text for the menu item to print the chart.
-     *
-     * @since    3.0.1
-     * @requires modules/exporting
-     */
-    printChart: 'Print chart',
-    /**
-     * Exporting module only. The text for the PNG download menu item.
-     *
-     * @since    2.0
-     * @requires modules/exporting
-     */
-    downloadPNG: 'Download PNG image',
-    /**
-     * Exporting module only. The text for the JPEG download menu item.
-     *
-     * @since    2.0
-     * @requires modules/exporting
-     */
-    downloadJPEG: 'Download JPEG image',
-    /**
-     * Exporting module only. The text for the PDF download menu item.
-     *
-     * @since    2.0
-     * @requires modules/exporting
-     */
-    downloadPDF: 'Download PDF document',
-    /**
-     * Exporting module only. The text for the SVG download menu item.
-     *
-     * @since    2.0
-     * @requires modules/exporting
-     */
-    downloadSVG: 'Download SVG vector image',
-    /**
-     * Exporting module menu. The tooltip title for the context menu holding
-     * print and export menu items.
-     *
-     * @since    3.0
-     * @requires modules/exporting
-     */
-    contextButtonTitle: 'Chart context menu'
-};
-/**
- * A collection of options for buttons and menus appearing in the exporting
- * module or in Stock Tools.
- *
- * @requires     modules/exporting
- * @optionparent navigation
- */
-const navigation = {
-    /**
-     * A collection of options for buttons appearing in the exporting
-     * module.
-     *
-     * In styled mode, the buttons are styled with the
-     * `.highcharts-contextbutton` and `.highcharts-button-symbol` classes.
-     *
-     * @requires modules/exporting
-     */
-    buttonOptions: {
-        /**
-         * Whether to enable buttons.
-         *
-         * @sample highcharts/navigation/buttonoptions-enabled/
-         *         Exporting module loaded but buttons disabled
-         *
-         * @type      {boolean}
-         * @default   true
-         * @since     2.0
-         * @apioption navigation.buttonOptions.enabled
-         */
-        /**
-         * The pixel size of the symbol on the button.
-         *
-         * @sample highcharts/navigation/buttonoptions-height/
-         *         Bigger buttons
-         *
-         * @since 2.0
-         */
-        symbolSize: 14,
-        /**
-         * The x position of the center of the symbol inside the button.
-         *
-         * @sample highcharts/navigation/buttonoptions-height/
-         *         Bigger buttons
-         *
-         * @since 2.0
-         */
-        symbolX: 14.5,
-        /**
-         * The y position of the center of the symbol inside the button.
-         *
-         * @sample highcharts/navigation/buttonoptions-height/
-         *         Bigger buttons
-         *
-         * @since 2.0
-         */
-        symbolY: 13.5,
-        /**
-         * Alignment for the buttons.
-         *
-         * @sample highcharts/navigation/buttonoptions-align/
-         *         Center aligned
-         *
-         * @type  {Highcharts.AlignValue}
-         * @since 2.0
-         */
-        align: 'right',
-        /**
-         * The pixel spacing between buttons, and between the context button and
-         * the title.
-         *
-         * @sample highcharts/title/widthadjust
-         *         Adjust the spacing when using text button
-         * @since 2.0
-         */
-        buttonSpacing: 5,
-        /**
-         * Pixel height of the buttons.
-         *
-         * @sample highcharts/navigation/buttonoptions-height/
-         *         Bigger buttons
-         *
-         * @since 2.0
-         */
-        height: 28,
-        /**
-         * A text string to add to the individual button.
-         *
-         * @sample highcharts/exporting/buttons-text/
-         *         Full text button
-         * @sample highcharts/exporting/buttons-text-usehtml/
-         *         Icon using CSS font in text
-         * @sample highcharts/exporting/buttons-text-symbol/
-         *         Combined symbol and text
-         *
-         * @type      {string}
-         * @default   null
-         * @since     3.0
-         * @apioption navigation.buttonOptions.text
-         */
-        /**
-         * Whether to use HTML for rendering the button. HTML allows for things
-         * like inline CSS or image-based icons.
-         *
-         * @sample highcharts/exporting/buttons-text-usehtml/
-         *         Icon using CSS font in text
-         *
-         * @type      boolean
-         * @default   false
-         * @since 10.3.0
-         * @apioption navigation.buttonOptions.useHTML
-         */
-        /**
-         * The vertical offset of the button's position relative to its
-         * `verticalAlign`. By default adjusted for the chart title alignment.
-         *
-         * @sample highcharts/navigation/buttonoptions-verticalalign/
-         *         Buttons at lower right
-         *
-         * @since     2.0
-         * @apioption navigation.buttonOptions.y
-         */
-        y: -5,
-        /**
-         * The vertical alignment of the buttons. Can be one of `"top"`,
-         * `"middle"` or `"bottom"`.
-         *
-         * @sample highcharts/navigation/buttonoptions-verticalalign/
-         *         Buttons at lower right
-         *
-         * @type  {Highcharts.VerticalAlignValue}
-         * @since 2.0
-         */
-        verticalAlign: 'top',
-        /**
-         * The pixel width of the button.
-         *
-         * @sample highcharts/navigation/buttonoptions-height/
-         *         Bigger buttons
-         *
-         * @since 2.0
-         */
-        width: 28,
-        /**
-         * Fill color for the symbol within the button.
-         *
-         * @sample highcharts/navigation/buttonoptions-symbolfill/
-         *         Blue symbol stroke for one of the buttons
-         *
-         * @type  {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
-         * @since 2.0
-         */
-        symbolFill: "#666666" /* Palette.neutralColor60 */,
-        /**
-         * The color of the symbol's stroke or line.
-         *
-         * @sample highcharts/navigation/buttonoptions-symbolstroke/
-         *         Blue symbol stroke
-         *
-         * @type  {Highcharts.ColorString}
-         * @since 2.0
-         */
-        symbolStroke: "#666666" /* Palette.neutralColor60 */,
-        /**
-         * The pixel stroke width of the symbol on the button.
-         *
-         * @sample highcharts/navigation/buttonoptions-height/
-         *         Bigger buttons
-         *
-         * @since 2.0
-         */
-        symbolStrokeWidth: 3,
-        /**
-         * A configuration object for the button theme. The object accepts
-         * SVG properties like `stroke-width`, `stroke` and `fill`.
-         * Tri-state button styles are supported by the `states.hover` and
-         * `states.select` objects.
-         *
-         * @sample highcharts/navigation/buttonoptions-theme/
-         *         Theming the buttons
-         *
-         * @requires modules/exporting
-         *
-         * @since 3.0
-         */
-        theme: {
-            /**
-             * The default fill exists only to capture hover events.
-             *
-             * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
-             */
-            fill: "#ffffff" /* Palette.backgroundColor */,
-            /**
-             * Padding for the button.
-             */
-            padding: 5,
-            /**
-             * Default stroke for the buttons.
-             *
-             * @type      {Highcharts.ColorString}
-             */
-            stroke: 'none',
-            /**
-             * Default stroke linecap for the buttons.
-             */
-            'stroke-linecap': 'round'
-        }
-    },
-    /**
-     * CSS styles for the popup menu appearing by default when the export
-     * icon is clicked. This menu is rendered in HTML.
-     *
-     * @see In styled mode, the menu is styled with the `.highcharts-menu`
-     *      class.
-     *
-     * @sample highcharts/navigation/menustyle/
-     *         Light gray menu background
-     *
-     * @type    {Highcharts.CSSObject}
-     * @default {"background": "#ffffff", "borderRadius": "3px", "padding": "0.5em"}
-     * @since   2.0
-     */
-    menuStyle: {
-        /** @ignore-option */
-        border: 'none',
-        /** @ignore-option */
-        borderRadius: '3px',
-        /** @ignore-option */
-        background: "#ffffff" /* Palette.backgroundColor */,
-        /** @ignore-option */
-        padding: '0.5em'
-    },
-    /**
-     * CSS styles for the individual items within the popup menu appearing
-     * by default when the export icon is clicked. The menu items are
-     * rendered in HTML. Font size defaults to `11px` on desktop and `14px`
-     * on touch devices.
-     *
-     * @see In styled mode, the menu items are styled with the
-     *      `.highcharts-menu-item` class.
-     *
-     * @sample {highcharts} highcharts/navigation/menuitemstyle/
-     *         Add a grey stripe to the left
-     *
-     * @type    {Highcharts.CSSObject}
-     * @default {"padding": "0.5em", "color": "#333333", "background": "none", "borderRadius": "3px", "fontSize": "0.8em", "transition": "background 250ms, color 250ms"}
-     * @since   2.0
-     */
-    menuItemStyle: {
-        /** @ignore-option */
-        background: 'none',
-        /** @ignore-option */
-        borderRadius: '3px',
-        /** @ignore-option */
-        color: "#333333" /* Palette.neutralColor80 */,
-        /** @ignore-option */
-        padding: '0.5em',
-        /** @ignore-option */
-        fontSize: isTouchDevice ? '0.9em' : '0.8em',
-        /** @ignore-option */
-        transition: 'background 250ms, color 250ms'
-    },
-    /**
-     * CSS styles for the hover state of the individual items within the
-     * popup menu appearing by default when the export icon is clicked. The
-     * menu items are rendered in HTML.
-     *
-     * @see In styled mode, the menu items are styled with the
-     *      `.highcharts-menu-item` class.
-     *
-     * @sample highcharts/navigation/menuitemhoverstyle/
-     *         Bold text on hover
-     *
-     * @type    {Highcharts.CSSObject}
-     * @default {"background": "#f2f2f2" }
-     * @since   2.0
-     */
-    menuItemHoverStyle: {
-        /** @ignore-option */
-        background: "#f2f2f2" /* Palette.neutralColor5 */
-    }
-};
-/* *
- *
- *  Default Export
- *
- * */
-const ExportingDefaults = {
-    exporting,
-    lang,
-    navigation
-};
-/* harmony default export */ const Exporting_ExportingDefaults = (ExportingDefaults);
-
-;// ./code/es-modules/Extensions/Exporting/ExportingSymbols.js
-/* *
- *
- *  Exporting module
- *
- *  (c) 2010-2025 Torstein Honsi
- *
- *  License: www.highcharts.com/license
- *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
- *
- * */
-
-/* *
- *
- *  Composition
- *
- * */
-var ExportingSymbols;
-(function (ExportingSymbols) {
-    /* *
-     *
-     *  Constants
-     *
-     * */
-    const modifiedClasses = [];
-    /* *
-     *
-     *  Functions
-     *
-     * */
-    /* eslint-disable valid-jsdoc */
-    /**
-     * @private
-     */
-    function compose(SVGRendererClass) {
-        if (modifiedClasses.indexOf(SVGRendererClass) === -1) {
-            modifiedClasses.push(SVGRendererClass);
-            const symbols = SVGRendererClass.prototype.symbols;
-            symbols.menu = menu;
-            symbols.menuball = menuball.bind(symbols);
-        }
-    }
-    ExportingSymbols.compose = compose;
-    /**
-     * @private
-     */
-    function menu(x, y, width, height) {
-        const arr = [
-            ['M', x, y + 2.5],
-            ['L', x + width, y + 2.5],
-            ['M', x, y + height / 2 + 0.5],
-            ['L', x + width, y + height / 2 + 0.5],
-            ['M', x, y + height - 1.5],
-            ['L', x + width, y + height - 1.5]
-        ];
-        return arr;
-    }
-    /**
-     * @private
-     */
-    function menuball(x, y, width, height) {
-        const h = (height / 3) - 2;
-        let path = [];
-        path = path.concat(this.circle(width - h, y, h, h), this.circle(width - h, y + h + 4, h, h), this.circle(width - h, y + 2 * (h + 4), h, h));
-        return path;
-    }
-})(ExportingSymbols || (ExportingSymbols = {}));
-/* *
- *
- *  Default Export
- *
- * */
-/* harmony default export */ const Exporting_ExportingSymbols = (ExportingSymbols);
-
-;// ./code/es-modules/Extensions/Exporting/Fullscreen.js
-/* *
- *
- *  (c) 2009-2025 Rafal Sebestjanski
- *
- *  Full screen for Highcharts
- *
- *  License: www.highcharts.com/license
- *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
- *
- * */
-/**
- * The module allows user to enable display chart in full screen mode.
- * Used in StockTools too.
- * Based on default solutions in browsers.
- */
-
-
-
-const { composed } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-
-const { addEvent, fireEvent, pushUnique } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-/* *
- *
- *  Functions
- *
- * */
-/**
- * @private
- */
-function onChartBeforeRender() {
-    /**
-     * @name Highcharts.Chart#fullscreen
-     * @type {Highcharts.Fullscreen}
-     * @requires modules/full-screen
-     */
-    this.fullscreen = new Fullscreen(this);
-}
-/* *
- *
- *  Class
- *
- * */
-/**
- * Handles displaying chart's container in the fullscreen mode.
- *
- * **Note**: Fullscreen is not supported on iPhone due to iOS limitations.
- *
- * @class
- * @name Highcharts.Fullscreen
- *
- * @requires modules/exporting
- */
-class Fullscreen {
-    /* *
-     *
-     *  Static Functions
-     *
-     * */
-    /**
-     * Prepares the chart class to support fullscreen.
-     *
-     * @param {typeof_Highcharts.Chart} ChartClass
-     * The chart class to decorate with fullscreen support.
-     */
-    static compose(ChartClass) {
-        if (pushUnique(composed, 'Fullscreen')) {
-            // Initialize fullscreen
-            addEvent(ChartClass, 'beforeRender', onChartBeforeRender);
-        }
-    }
-    /* *
-     *
-     *  Constructors
-     *
-     * */
-    constructor(chart) {
-        /**
-         * Chart managed by the fullscreen controller.
-         * @name Highcharts.Fullscreen#chart
-         * @type {Highcharts.Chart}
-         */
-        this.chart = chart;
-        /**
-         * The flag is set to `true` when the chart is displayed in
-         * the fullscreen mode.
-         *
-         * @name Highcharts.Fullscreen#isOpen
-         * @type {boolean|undefined}
-         * @since 8.0.1
-         */
-        this.isOpen = false;
-        const container = chart.renderTo;
-        // Hold event and methods available only for a current browser.
-        if (!this.browserProps) {
-            if (typeof container.requestFullscreen === 'function') {
-                this.browserProps = {
-                    fullscreenChange: 'fullscreenchange',
-                    requestFullscreen: 'requestFullscreen',
-                    exitFullscreen: 'exitFullscreen'
-                };
-            }
-            else if (container.mozRequestFullScreen) {
-                this.browserProps = {
-                    fullscreenChange: 'mozfullscreenchange',
-                    requestFullscreen: 'mozRequestFullScreen',
-                    exitFullscreen: 'mozCancelFullScreen'
-                };
-            }
-            else if (container.webkitRequestFullScreen) {
-                this.browserProps = {
-                    fullscreenChange: 'webkitfullscreenchange',
-                    requestFullscreen: 'webkitRequestFullScreen',
-                    exitFullscreen: 'webkitExitFullscreen'
-                };
-            }
-            else if (container.msRequestFullscreen) {
-                this.browserProps = {
-                    fullscreenChange: 'MSFullscreenChange',
-                    requestFullscreen: 'msRequestFullscreen',
-                    exitFullscreen: 'msExitFullscreen'
-                };
-            }
-        }
-    }
-    /* *
-     *
-     *  Functions
-     *
-     * */
-    /**
-     * Stops displaying the chart in fullscreen mode.
-     * Exporting module required.
-     *
-     * @since       8.0.1
-     *
-     * @function    Highcharts.Fullscreen#close
-     * @return      {void}
-     * @requires    modules/full-screen
-     */
-    close() {
-        const fullscreen = this, chart = fullscreen.chart, optionsChart = chart.options.chart;
-        fireEvent(chart, 'fullscreenClose', null, function () {
-            // Don't fire exitFullscreen() when user exited
-            // using 'Escape' button.
-            if (fullscreen.isOpen &&
-                fullscreen.browserProps &&
-                chart.container.ownerDocument instanceof Document) {
-                chart.container.ownerDocument[fullscreen.browserProps.exitFullscreen]();
-            }
-            // Unbind event as it's necessary only before exiting
-            // from fullscreen.
-            if (fullscreen.unbindFullscreenEvent) {
-                fullscreen.unbindFullscreenEvent = fullscreen
-                    .unbindFullscreenEvent();
-            }
-            chart.setSize(fullscreen.origWidth, fullscreen.origHeight, false);
-            fullscreen.origWidth = void 0;
-            fullscreen.origHeight = void 0;
-            optionsChart.width = fullscreen.origWidthOption;
-            optionsChart.height = fullscreen.origHeightOption;
-            fullscreen.origWidthOption = void 0;
-            fullscreen.origHeightOption = void 0;
-            fullscreen.isOpen = false;
-            fullscreen.setButtonText();
-        });
-    }
-    /**
-     * Displays the chart in fullscreen mode.
-     * When fired customly by user before exporting context button is created,
-     * button's text will not be replaced - it's on the user side.
-     * Exporting module required.
-     *
-     * @since       8.0.1
-     *
-     * @function Highcharts.Fullscreen#open
-     * @return      {void}
-     * @requires    modules/full-screen
-     */
-    open() {
-        const fullscreen = this, chart = fullscreen.chart, optionsChart = chart.options.chart;
-        fireEvent(chart, 'fullscreenOpen', null, function () {
-            if (optionsChart) {
-                fullscreen.origWidthOption = optionsChart.width;
-                fullscreen.origHeightOption = optionsChart.height;
-            }
-            fullscreen.origWidth = chart.chartWidth;
-            fullscreen.origHeight = chart.chartHeight;
-            // Handle exitFullscreen() method when user clicks 'Escape' button.
-            if (fullscreen.browserProps) {
-                const unbindChange = addEvent(chart.container.ownerDocument, // Chart's document
-                fullscreen.browserProps.fullscreenChange, function () {
-                    // Handle lack of async of browser's
-                    // fullScreenChange event.
-                    if (fullscreen.isOpen) {
-                        fullscreen.isOpen = false;
-                        fullscreen.close();
-                    }
-                    else {
-                        chart.setSize(null, null, false);
-                        fullscreen.isOpen = true;
-                        fullscreen.setButtonText();
-                    }
-                });
-                const unbindDestroy = addEvent(chart, 'destroy', unbindChange);
-                fullscreen.unbindFullscreenEvent = () => {
-                    unbindChange();
-                    unbindDestroy();
-                };
-                const promise = chart.renderTo[fullscreen.browserProps.requestFullscreen]();
-                if (promise) {
-                    promise['catch'](function () {
-                        alert(// eslint-disable-line no-alert
-                        'Full screen is not supported inside a frame.');
-                    });
-                }
-            }
-        });
-    }
-    /**
-     * Replaces the exporting context button's text when toogling the
-     * fullscreen mode.
-     *
-     * @private
-     *
-     * @since 8.0.1
-     *
-     * @requires modules/full-screen
-     */
-    setButtonText() {
-        const chart = this.chart, exportDivElements = chart.exportDivElements, exportingOptions = chart.options.exporting, menuItems = (exportingOptions &&
-            exportingOptions.buttons &&
-            exportingOptions.buttons.contextButton.menuItems), lang = chart.options.lang;
-        if (exportingOptions &&
-            exportingOptions.menuItemDefinitions &&
-            lang &&
-            lang.exitFullscreen &&
-            lang.viewFullscreen &&
-            menuItems &&
-            exportDivElements) {
-            const exportDivElement = exportDivElements[menuItems.indexOf('viewFullscreen')];
-            if (exportDivElement) {
-                highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().setElementHTML(exportDivElement, !this.isOpen ?
-                    (exportingOptions.menuItemDefinitions.viewFullscreen
-                        .text ||
-                        lang.viewFullscreen) : lang.exitFullscreen);
-            }
-        }
-    }
-    /**
-     * Toggles displaying the chart in fullscreen mode.
-     * By default, when the exporting module is enabled, a context button with
-     * a drop down menu in the upper right corner accesses this function.
-     * Exporting module required.
-     *
-     * @since 8.0.1
-     *
-     * @sample      highcharts/members/chart-togglefullscreen/
-     *              Toggle fullscreen mode from a HTML button
-     *
-     * @function Highcharts.Fullscreen#toggle
-     * @requires    modules/full-screen
-     */
-    toggle() {
-        const fullscreen = this;
-        if (!fullscreen.isOpen) {
-            fullscreen.open();
-        }
-        else {
-            fullscreen.close();
-        }
-    }
-}
-/* *
- *
- *  Default Export
- *
- * */
-/* harmony default export */ const Exporting_Fullscreen = (Fullscreen);
-/* *
- *
- *  API Declarations
- *
- * */
-/**
- * Gets fired when closing the fullscreen
- *
- * @callback Highcharts.FullScreenfullscreenCloseCallbackFunction
- *
- * @param {Highcharts.Chart} chart
- *        The chart on which the event occurred.
- *
- * @param {global.Event} event
- *        The event that occurred.
- */
-/**
- * Gets fired when opening the fullscreen
- *
- * @callback Highcharts.FullScreenfullscreenOpenCallbackFunction
- *
- * @param {Highcharts.Chart} chart
- *        The chart on which the event occurred.
- *
- * @param {global.Event} event
- *        The event that occurred.
- */
-(''); // Keeps doclets above separated from following code
-/* *
- *
- *  API Options
- *
- * */
-/**
- * Fires when a fullscreen is closed through the context menu item,
- * or a fullscreen is closed on the `Escape` button click,
- * or the `Chart.fullscreen.close` method.
- *
- * @sample highcharts/chart/events-fullscreen
- *         Title size change on fullscreen open
- *
- * @type      {Highcharts.FullScreenfullscreenCloseCallbackFunction}
- * @since     10.1.0
- * @context   Highcharts.Chart
- * @requires  modules/full-screen
- * @apioption chart.events.fullscreenClose
- */
-/**
- * Fires when a fullscreen is opened through the context menu item,
- * or the `Chart.fullscreen.open` method.
- *
- * @sample highcharts/chart/events-fullscreen
- *         Title size change on fullscreen open
- *
- * @type      {Highcharts.FullScreenfullscreenOpenCallbackFunction}
- * @since     10.1.0
- * @context   Highcharts.Chart
- * @requires  modules/full-screen
- * @apioption chart.events.fullscreenOpen
- */
-(''); // Keeps doclets above in transpiled file
-
-// EXTERNAL MODULE: external {"amd":["highcharts/highcharts","HttpUtilities"],"commonjs":["highcharts","HttpUtilities"],"commonjs2":["highcharts","HttpUtilities"],"root":["Highcharts","HttpUtilities"]}
-var highcharts_HttpUtilities_commonjs_highcharts_HttpUtilities_commonjs2_highcharts_HttpUtilities_root_Highcharts_HttpUtilities_ = __webpack_require__(156);
-var highcharts_HttpUtilities_commonjs_highcharts_HttpUtilities_commonjs2_highcharts_HttpUtilities_root_Highcharts_HttpUtilities_default = /*#__PURE__*/__webpack_require__.n(highcharts_HttpUtilities_commonjs_highcharts_HttpUtilities_commonjs2_highcharts_HttpUtilities_root_Highcharts_HttpUtilities_);
-;// ./code/es-modules/Extensions/Exporting/Exporting.js
-/* *
- *
- *  Exporting module
- *
- *  (c) 2010-2025 Torstein Honsi
- *
- *  License: www.highcharts.com/license
- *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
- *
- * */
-
-
-
-
-
-const { defaultOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-
-
-
-
-const { doc: Exporting_doc, SVG_NS, win: Exporting_win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-
-
-const { addEvent: Exporting_addEvent, css, createElement, discardElement, extend, find, fireEvent: Exporting_fireEvent, isObject, merge, objectEach, pick, removeEvent, splat, uniqueKey } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-/* *
- *
- *  Composition
- *
- * */
-var Exporting;
-(function (Exporting) {
-    /* *
-     *
-     *  Declarations
-     *
-     * */
-    /* *
-     *
-     *  Constants
-     *
-     * */
-    // These CSS properties are not inlined. Remember camelCase.
-    const inlineDenylist = [
-        /-/, // In Firefox, both hyphened and camelCased names are listed
-        /^(clipPath|cssText|d|height|width)$/, // Full words
-        /^font$/, // More specific props are set
-        /[lL]ogical(Width|Height)$/,
-        /^parentRule$/,
-        /^(cssRules|ownerRules)$/, // #19516 read-only properties
-        /perspective/,
-        /TapHighlightColor/,
-        /^transition/,
-        /^length$/, // #7700
-        /^\d+$/ // #17538
-    ];
-    // These ones are translated to attributes rather than styles
-    const inlineToAttributes = [
-        'fill',
-        'stroke',
-        'strokeLinecap',
-        'strokeLinejoin',
-        'strokeWidth',
-        'textAnchor',
-        'x',
-        'y'
-    ];
-    Exporting.inlineAllowlist = [];
-    const unstyledElements = [
-        'clipPath',
-        'defs',
-        'desc'
-    ];
-    /* *
-     *
-     *  Variables
-     *
-     * */
-    let printingChart;
-    /* *
-     *
-     *  Functions
-     *
-     * */
-    /**
-     * Add the export button to the chart, with options.
-     *
-     * @private
-     * @function Highcharts.Chart#addButton
-     * @param {Highcharts.NavigationButtonOptions} options
-     * @requires modules/exporting
-     */
-    function addButton(options) {
-        const chart = this, renderer = chart.renderer, btnOptions = merge(chart.options.navigation.buttonOptions, options), onclick = btnOptions.onclick, menuItems = btnOptions.menuItems, symbolSize = btnOptions.symbolSize || 12;
-        let symbol;
-        if (!chart.btnCount) {
-            chart.btnCount = 0;
-        }
-        // Keeps references to the button elements
-        if (!chart.exportDivElements) {
-            chart.exportDivElements = [];
-            chart.exportSVGElements = [];
-        }
-        if (btnOptions.enabled === false || !btnOptions.theme) {
-            return;
-        }
-        const theme = chart.styledMode ? {} : btnOptions.theme;
-        let callback;
-        if (onclick) {
-            callback = function (e) {
-                if (e) {
-                    e.stopPropagation();
-                }
-                onclick.call(chart, e);
-            };
-        }
-        else if (menuItems) {
-            callback = function (e) {
-                // Consistent with onclick call (#3495)
-                if (e) {
-                    e.stopPropagation();
-                }
-                chart.contextMenu(button.menuClassName, menuItems, button.translateX || 0, button.translateY || 0, button.width || 0, button.height || 0, button);
-                button.setState(2);
-            };
-        }
-        if (btnOptions.text && btnOptions.symbol) {
-            theme.paddingLeft = pick(theme.paddingLeft, 30);
-        }
-        else if (!btnOptions.text) {
-            extend(theme, {
-                width: btnOptions.width,
-                height: btnOptions.height,
-                padding: 0
-            });
-        }
-        const button = renderer
-            .button(btnOptions.text, 0, 0, callback, theme, void 0, void 0, void 0, void 0, btnOptions.useHTML)
-            .addClass(options.className)
-            .attr({
-            title: pick(chart.options.lang[btnOptions._titleKey || btnOptions.titleKey], '')
-        });
-        button.menuClassName = (options.menuClassName ||
-            'highcharts-menu-' + chart.btnCount++);
-        if (btnOptions.symbol) {
-            symbol = renderer
-                .symbol(btnOptions.symbol, Math.round((btnOptions.symbolX || 0) - (symbolSize / 2)), Math.round((btnOptions.symbolY || 0) - (symbolSize / 2)), symbolSize, symbolSize
-            // If symbol is an image, scale it (#7957)
-            , {
-                width: symbolSize,
-                height: symbolSize
-            })
-                .addClass('highcharts-button-symbol')
-                .attr({
-                zIndex: 1
-            })
-                .add(button);
-            if (!chart.styledMode) {
-                symbol.attr({
-                    stroke: btnOptions.symbolStroke,
-                    fill: btnOptions.symbolFill,
-                    'stroke-width': btnOptions.symbolStrokeWidth || 1
-                });
-            }
-        }
-        button
-            .add(chart.exportingGroup)
-            .align(extend(btnOptions, {
-            width: button.width,
-            x: pick(btnOptions.x, chart.buttonOffset) // #1654
-        }), true, 'spacingBox');
-        chart.buttonOffset += (((button.width || 0) + btnOptions.buttonSpacing) *
-            (btnOptions.align === 'right' ? -1 : 1));
-        chart.exportSVGElements.push(button, symbol);
-    }
-    /**
-     * Clean up after printing a chart.
-     *
-     * @function Highcharts#afterPrint
-     *
-     * @private
-     *
-     * @param {Highcharts.Chart} chart
-     *        Chart that was (or suppose to be) printed
-     *
-     * @emits Highcharts.Chart#event:afterPrint
-     */
-    function afterPrint() {
-        const chart = this;
-        if (!chart.printReverseInfo) {
-            return void 0;
-        }
-        const { childNodes, origDisplay, resetParams } = chart.printReverseInfo;
-        // Put the chart back in
-        chart.moveContainers(chart.renderTo);
-        // Restore all body content
-        [].forEach.call(childNodes, function (node, i) {
-            if (node.nodeType === 1) {
-                node.style.display = (origDisplay[i] || '');
-            }
-        });
-        chart.isPrinting = false;
-        // Reset printMaxWidth
-        if (resetParams) {
-            chart.setSize.apply(chart, resetParams);
-        }
-        delete chart.printReverseInfo;
-        printingChart = void 0;
-        Exporting_fireEvent(chart, 'afterPrint');
-    }
-    /**
-     * Prepare chart and document before printing a chart.
-     *
-     * @function Highcharts#beforePrint
-     *
-     * @private
-     *
-     *
-     * @emits Highcharts.Chart#event:beforePrint
-     */
-    function beforePrint() {
-        const chart = this, body = Exporting_doc.body, printMaxWidth = chart.options.exporting.printMaxWidth, printReverseInfo = {
-            childNodes: body.childNodes,
-            origDisplay: [],
-            resetParams: void 0
-        };
-        chart.isPrinting = true;
-        chart.pointer?.reset(void 0, 0);
-        Exporting_fireEvent(chart, 'beforePrint');
-        // Handle printMaxWidth
-        const handleMaxWidth = printMaxWidth &&
-            chart.chartWidth > printMaxWidth;
-        if (handleMaxWidth) {
-            printReverseInfo.resetParams = [
-                chart.options.chart.width,
-                void 0,
-                false
-            ];
-            chart.setSize(printMaxWidth, void 0, false);
-        }
-        // Hide all body content
-        [].forEach.call(printReverseInfo.childNodes, function (node, i) {
-            if (node.nodeType === 1) {
-                printReverseInfo.origDisplay[i] = node.style.display;
-                node.style.display = 'none';
-            }
-        });
-        // Pull out the chart
-        chart.moveContainers(body);
-        // Storage details for undo action after printing
-        chart.printReverseInfo = printReverseInfo;
-    }
-    /**
-     * @private
-     */
-    function chartCallback(chart) {
-        const composition = chart;
-        composition.renderExporting();
-        Exporting_addEvent(chart, 'redraw', composition.renderExporting);
-        // Destroy the export elements at chart destroy
-        Exporting_addEvent(chart, 'destroy', composition.destroyExport);
-        // Uncomment this to see a button directly below the chart, for quick
-        // testing of export
-        /*
-        let button, viewImage, viewSource;
-        if (!chart.renderer.forExport) {
-            viewImage = function () {
-                let div = doc.createElement('div');
-                div.innerHTML = chart.getSVGForExport();
-                chart.renderTo.parentNode.appendChild(div);
-            };
-
-            viewSource = function () {
-                let pre = doc.createElement('pre');
-                pre.innerHTML = chart.getSVGForExport()
-                    .replace(/</g, '\n&lt;')
-                    .replace(/>/g, '&gt;');
-                chart.renderTo.parentNode.appendChild(pre);
-            };
-
-            viewImage();
-
-            // View SVG Image
-            button = doc.createElement('button');
-            button.innerHTML = 'View SVG Image';
-            chart.renderTo.parentNode.appendChild(button);
-            button.onclick = viewImage;
-
-            // View SVG Source
-            button = doc.createElement('button');
-            button.innerHTML = 'View SVG Source';
-            chart.renderTo.parentNode.appendChild(button);
-            button.onclick = viewSource;
-        }
-        //*/
-    }
-    /**
-     * @private
-     */
-    function compose(ChartClass, SVGRendererClass) {
-        Exporting_ExportingSymbols.compose(SVGRendererClass);
-        Exporting_Fullscreen.compose(ChartClass);
-        const chartProto = ChartClass.prototype;
-        if (!chartProto.exportChart) {
-            chartProto.afterPrint = afterPrint;
-            chartProto.exportChart = exportChart;
-            chartProto.inlineStyles = inlineStyles;
-            chartProto.print = print;
-            chartProto.sanitizeSVG = sanitizeSVG;
-            chartProto.getChartHTML = getChartHTML;
-            chartProto.getSVG = getSVG;
-            chartProto.getSVGForExport = getSVGForExport;
-            chartProto.getFilename = getFilename;
-            chartProto.moveContainers = moveContainers;
-            chartProto.beforePrint = beforePrint;
-            chartProto.contextMenu = contextMenu;
-            chartProto.addButton = addButton;
-            chartProto.destroyExport = destroyExport;
-            chartProto.renderExporting = renderExporting;
-            chartProto.resolveCSSVariables = resolveCSSVariables;
-            chartProto.callbacks.push(chartCallback);
-            Exporting_addEvent(ChartClass, 'init', onChartInit);
-            Exporting_addEvent(ChartClass, 'layOutTitle', onChartLayOutTitle);
-            if ((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari) {
-                Exporting_win.matchMedia('print').addListener(function (mqlEvent) {
-                    if (!printingChart) {
-                        return void 0;
-                    }
-                    if (mqlEvent.matches) {
-                        printingChart.beforePrint();
-                    }
-                    else {
-                        printingChart.afterPrint();
-                    }
-                });
-            }
-            defaultOptions.exporting = merge(Exporting_ExportingDefaults.exporting, defaultOptions.exporting);
-            defaultOptions.lang = merge(Exporting_ExportingDefaults.lang, defaultOptions.lang);
-            // Buttons and menus are collected in a separate config option set
-            // called 'navigation'. This can be extended later to add control
-            // buttons like zoom and pan right click menus.
-            defaultOptions.navigation = merge(Exporting_ExportingDefaults.navigation, defaultOptions.navigation);
-        }
-    }
-    Exporting.compose = compose;
-    /**
-     * Display a popup menu for choosing the export type.
-     *
-     * @private
-     * @function Highcharts.Chart#contextMenu
-     * @param {string} className
-     *        An identifier for the menu.
-     * @param {Array<string|Highcharts.ExportingMenuObject>} items
-     *        A collection with text and onclicks for the items.
-     * @param {number} x
-     *        The x position of the opener button
-     * @param {number} y
-     *        The y position of the opener button
-     * @param {number} width
-     *        The width of the opener button
-     * @param {number} height
-     *        The height of the opener button
-     * @requires modules/exporting
-     */
-    function contextMenu(className, items, x, y, width, height, button) {
-        const chart = this, navOptions = chart.options.navigation, chartWidth = chart.chartWidth, chartHeight = chart.chartHeight, cacheName = 'cache-' + className, 
-        // For mouse leave detection
-        menuPadding = Math.max(width, height);
-        let innerMenu, menu = chart[cacheName];
-        // Create the menu only the first time
-        if (!menu) {
-            // Create a HTML element above the SVG
-            chart.exportContextMenu = chart[cacheName] = menu =
-                createElement('div', {
-                    className: className
-                }, {
-                    position: 'absolute',
-                    zIndex: 1000,
-                    padding: menuPadding + 'px',
-                    pointerEvents: 'auto',
-                    ...chart.renderer.style
-                }, chart.scrollablePlotArea?.fixedDiv || chart.container);
-            innerMenu = createElement('ul', { className: 'highcharts-menu' }, chart.styledMode ? {} : {
-                listStyle: 'none',
-                margin: 0,
-                padding: 0
-            }, menu);
-            // Presentational CSS
-            if (!chart.styledMode) {
-                css(innerMenu, extend({
-                    MozBoxShadow: '3px 3px 10px #888',
-                    WebkitBoxShadow: '3px 3px 10px #888',
-                    boxShadow: '3px 3px 10px #888'
-                }, navOptions.menuStyle));
-            }
-            // Hide on mouse out
-            menu.hideMenu = function () {
-                css(menu, { display: 'none' });
-                if (button) {
-                    button.setState(0);
-                }
-                chart.openMenu = false;
-                // #10361, #9998
-                css(chart.renderTo, { overflow: 'hidden' });
-                css(chart.container, { overflow: 'hidden' });
-                highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().clearTimeout(menu.hideTimer);
-                Exporting_fireEvent(chart, 'exportMenuHidden');
-            };
-            // Hide the menu some time after mouse leave (#1357)
-            chart.exportEvents.push(Exporting_addEvent(menu, 'mouseleave', function () {
-                menu.hideTimer = Exporting_win.setTimeout(menu.hideMenu, 500);
-            }), Exporting_addEvent(menu, 'mouseenter', function () {
-                highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().clearTimeout(menu.hideTimer);
-            }), 
-            // Hide it on clicking or touching outside the menu (#2258,
-            // #2335, #2407)
-            Exporting_addEvent(Exporting_doc, 'mouseup', function (e) {
-                if (!chart.pointer?.inClass(e.target, className)) {
-                    menu.hideMenu();
-                }
-            }), Exporting_addEvent(menu, 'click', function () {
-                if (chart.openMenu) {
-                    menu.hideMenu();
-                }
-            }));
-            // Create the items
-            items.forEach(function (item) {
-                if (typeof item === 'string') {
-                    item = chart.options.exporting
-                        .menuItemDefinitions[item];
-                }
-                if (isObject(item, true)) {
-                    let element;
-                    if (item.separator) {
-                        element = createElement('hr', void 0, void 0, innerMenu);
-                    }
-                    else {
-                        // When chart initialized with the table, wrong button
-                        // text displayed, #14352.
-                        if (item.textKey === 'viewData' &&
-                            chart.isDataTableVisible) {
-                            item.textKey = 'hideData';
-                        }
-                        element = createElement('li', {
-                            className: 'highcharts-menu-item',
-                            onclick: function (e) {
-                                if (e) { // IE7
-                                    e.stopPropagation();
-                                }
-                                menu.hideMenu();
-                                if (typeof item !== 'string' && item.onclick) {
-                                    item.onclick.apply(chart, arguments);
-                                }
-                            }
-                        }, void 0, innerMenu);
-                        highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().setElementHTML(element, item.text ||
-                            chart.options.lang[item.textKey]);
-                        if (!chart.styledMode) {
-                            element.onmouseover = function () {
-                                css(this, navOptions.menuItemHoverStyle);
-                            };
-                            element.onmouseout = function () {
-                                css(this, navOptions.menuItemStyle);
-                            };
-                            css(element, extend({
-                                cursor: 'pointer'
-                            }, navOptions.menuItemStyle || {}));
-                        }
-                    }
-                    // Keep references to menu divs to be able to destroy them
-                    chart.exportDivElements.push(element);
-                }
-            });
-            // Keep references to menu and innerMenu div to be able to destroy
-            // them
-            chart.exportDivElements.push(innerMenu, menu);
-            chart.exportMenuWidth = menu.offsetWidth;
-            chart.exportMenuHeight = menu.offsetHeight;
-        }
-        const menuStyle = { display: 'block' };
-        // If outside right, right align it
-        if (x + (chart.exportMenuWidth || 0) > chartWidth) {
-            menuStyle.right = (chartWidth - x - width - menuPadding) + 'px';
-        }
-        else {
-            menuStyle.left = (x - menuPadding) + 'px';
-        }
-        // If outside bottom, bottom align it
-        if (y + height + (chart.exportMenuHeight || 0) > chartHeight &&
-            button.alignOptions?.verticalAlign !== 'top') {
-            menuStyle.bottom = (chartHeight - y - menuPadding) + 'px';
-        }
-        else {
-            menuStyle.top = (y + height - menuPadding) + 'px';
-        }
-        css(menu, menuStyle);
-        // #10361, #9998
-        css(chart.renderTo, { overflow: '' });
-        css(chart.container, { overflow: '' });
-        chart.openMenu = true;
-        Exporting_fireEvent(chart, 'exportMenuShown');
-    }
-    /**
-     * Destroy the export buttons.
-     * @private
-     * @function Highcharts.Chart#destroyExport
-     * @param {global.Event} [e]
-     * @requires modules/exporting
-     */
-    function destroyExport(e) {
-        const chart = e ? e.target : this, exportSVGElements = chart.exportSVGElements, exportDivElements = chart.exportDivElements, exportEvents = chart.exportEvents;
-        let cacheName;
-        // Destroy the extra buttons added
-        if (exportSVGElements) {
-            exportSVGElements.forEach((elem, i) => {
-                // Destroy and null the svg elements
-                if (elem) { // #1822
-                    elem.onclick = elem.ontouchstart = null;
-                    cacheName = 'cache-' + elem.menuClassName;
-                    if (chart[cacheName]) {
-                        delete chart[cacheName];
-                    }
-                    exportSVGElements[i] = elem.destroy();
-                }
-            });
-            exportSVGElements.length = 0;
-        }
-        // Destroy the exporting group
-        if (chart.exportingGroup) {
-            chart.exportingGroup.destroy();
-            delete chart.exportingGroup;
-        }
-        // Destroy the divs for the menu
-        if (exportDivElements) {
-            exportDivElements.forEach(function (elem, i) {
-                if (elem) {
-                    // Remove the event handler
-                    highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().clearTimeout(elem.hideTimer); // #5427
-                    removeEvent(elem, 'mouseleave');
-                    // Remove inline events
-                    // (chart.exportDivElements as any)[i] =
-                    exportDivElements[i] =
-                        elem.onmouseout =
-                            elem.onmouseover =
-                                elem.ontouchstart =
-                                    elem.onclick = null;
-                    // Destroy the div by moving to garbage bin
-                    discardElement(elem);
-                }
-            });
-            exportDivElements.length = 0;
-        }
-        if (exportEvents) {
-            exportEvents.forEach(function (unbind) {
-                unbind();
-            });
-            exportEvents.length = 0;
-        }
-    }
-    /**
-     * Exporting module required. Submit an SVG version of the chart to a server
-     * along with some parameters for conversion.
-     *
-     * @sample highcharts/members/chart-exportchart/
-     *         Export with no options
-     * @sample highcharts/members/chart-exportchart-filename/
-     *         PDF type and custom filename
-     * @sample highcharts/members/chart-exportchart-custom-background/
-     *         Different chart background in export
-     * @sample stock/members/chart-exportchart/
-     *         Export with Highcharts Stock
-     *
-     * @function Highcharts.Chart#exportChart
-     *
-     * @param {Highcharts.ExportingOptions} exportingOptions
-     *        Exporting options in addition to those defined in
-     *        [exporting](https://api.highcharts.com/highcharts/exporting).
-     *
-     * @param {Highcharts.Options} chartOptions
-     *        Additional chart options for the exported chart. For example a
-     *        different background color can be added here, or `dataLabels` for
-     *        export only.
-     *
-     * @requires modules/exporting
-     */
-    function exportChart(exportingOptions, chartOptions) {
-        const svg = this.getSVGForExport(exportingOptions, chartOptions);
-        // Merge the options
-        exportingOptions = merge(this.options.exporting, exportingOptions);
-        // Do the post
-        highcharts_HttpUtilities_commonjs_highcharts_HttpUtilities_commonjs2_highcharts_HttpUtilities_root_Highcharts_HttpUtilities_default().post(exportingOptions.url, {
-            filename: exportingOptions.filename ?
-                exportingOptions.filename.replace(/\//g, '-') :
-                this.getFilename(),
-            type: exportingOptions.type,
-            width: exportingOptions.width,
-            scale: exportingOptions.scale,
-            svg: svg
-        }, exportingOptions.fetchOptions);
-    }
-    /**
-     * Return the unfiltered innerHTML of the chart container. Used as hook for
-     * plugins. In styled mode, it also takes care of inlining CSS style rules.
-     *
-     * @see Chart#getSVG
-     *
-     * @function Highcharts.Chart#getChartHTML
-     *
-     * @return {string}
-     * The unfiltered SVG of the chart.
-     *
-     * @requires modules/exporting
-     */
-    function getChartHTML(applyStyleSheets) {
-        if (applyStyleSheets) {
-            this.inlineStyles();
-        }
-        this.resolveCSSVariables();
-        return this.container.innerHTML;
-    }
-    /**
-     * Get the default file name used for exported charts. By default it creates
-     * a file name based on the chart title.
-     *
-     * @function Highcharts.Chart#getFilename
-     *
-     * @return {string} A file name without extension.
-     *
-     * @requires modules/exporting
-     */
-    function getFilename() {
-        const s = this.userOptions.title && this.userOptions.title.text;
-        let filename = this.options.exporting.filename;
-        if (filename) {
-            return filename.replace(/\//g, '-');
-        }
-        if (typeof s === 'string') {
-            filename = s
-                .toLowerCase()
-                .replace(/<\/?[^>]+(>|$)/g, '') // Strip HTML tags
-                .replace(/[\s_]+/g, '-')
-                .replace(/[^a-z\d\-]/g, '') // Preserve only latin
-                .replace(/^[\-]+/g, '') // Dashes in the start
-                .replace(/[\-]+/g, '-') // Dashes in a row
-                .substr(0, 24)
-                .replace(/[\-]+$/g, ''); // Dashes in the end;
-        }
-        if (!filename || filename.length < 5) {
-            filename = 'chart';
-        }
-        return filename;
-    }
-    /**
-     * Return an SVG representation of the chart.
-     *
-     * @sample highcharts/members/chart-getsvg/
-     *         View the SVG from a button
-     *
-     * @function Highcharts.Chart#getSVG
-     *
-     * @param {Highcharts.Options} [chartOptions]
-     *        Additional chart options for the generated SVG representation. For
-     *        collections like `xAxis`, `yAxis` or `series`, the additional
-     *        options is either merged in to the original item of the same
-     *        `id`, or to the first item if a common id is not found.
-     *
-     * @return {string}
-     *         The SVG representation of the rendered chart.
-     *
-     * @emits Highcharts.Chart#event:getSVG
-     *
-     * @requires modules/exporting
-     */
-    function getSVG(chartOptions) {
-        const chart = this;
-        let svg, seriesOptions, 
-        // Copy the options and add extra options
-        options = merge(chart.options, chartOptions);
-        // Use userOptions to make the options chain in series right (#3881)
-        options.plotOptions = merge(chart.userOptions.plotOptions, chartOptions && chartOptions.plotOptions);
-        // ... and likewise with time, avoid that undefined time properties are
-        // merged over legacy global time options
-        options.time = merge(chart.userOptions.time, chartOptions && chartOptions.time);
-        // Create a sandbox where a new chart will be generated
-        const sandbox = createElement('div', null, {
-            position: 'absolute',
-            top: '-9999em',
-            width: chart.chartWidth + 'px',
-            height: chart.chartHeight + 'px'
-        }, Exporting_doc.body);
-        // Get the source size
-        const cssWidth = chart.renderTo.style.width, cssHeight = chart.renderTo.style.height, sourceWidth = options.exporting.sourceWidth ||
-            options.chart.width ||
-            (/px$/.test(cssWidth) && parseInt(cssWidth, 10)) ||
-            (options.isGantt ? 800 : 600), sourceHeight = options.exporting.sourceHeight ||
-            options.chart.height ||
-            (/px$/.test(cssHeight) && parseInt(cssHeight, 10)) ||
-            400;
-        // Override some options
-        extend(options.chart, {
-            animation: false,
-            renderTo: sandbox,
-            forExport: true,
-            renderer: 'SVGRenderer',
-            width: sourceWidth,
-            height: sourceHeight
-        });
-        options.exporting.enabled = false; // Hide buttons in print
-        delete options.data; // #3004
-        // prepare for replicating the chart
-        options.series = [];
-        chart.series.forEach(function (serie) {
-            seriesOptions = merge(serie.userOptions, {
-                animation: false, // Turn off animation
-                enableMouseTracking: false,
-                showCheckbox: false,
-                visible: serie.visible
-            });
-            // Used for the navigator series that has its own option set
-            if (!seriesOptions.isInternal) {
-                options.series.push(seriesOptions);
-            }
-        });
-        const colls = {};
-        chart.axes.forEach(function (axis) {
-            // Assign an internal key to ensure a one-to-one mapping (#5924)
-            if (!axis.userOptions.internalKey) { // #6444
-                axis.userOptions.internalKey = uniqueKey();
-            }
-            if (!axis.options.isInternal) {
-                if (!colls[axis.coll]) {
-                    colls[axis.coll] = true;
-                    options[axis.coll] = [];
-                }
-                options[axis.coll].push(merge(axis.userOptions, {
-                    visible: axis.visible,
-                    // Force some options that could have be set directly on
-                    // the axis while missing in the userOptions or options.
-                    type: axis.type,
-                    uniqueNames: axis.uniqueNames
-                }));
-            }
-        });
-        // Make sure the `colorAxis` object of the `defaultOptions` isn't used
-        // in the chart copy's user options, because a color axis should only be
-        // added when the user actually applies it.
-        options.colorAxis = chart.userOptions.colorAxis;
-        // Generate the chart copy
-        const chartCopy = new chart.constructor(options, chart.callback);
-        // Axis options and series options  (#2022, #3900, #5982)
-        if (chartOptions) {
-            ['xAxis', 'yAxis', 'series'].forEach(function (coll) {
-                const collOptions = {};
-                if (chartOptions[coll]) {
-                    collOptions[coll] = chartOptions[coll];
-                    chartCopy.update(collOptions);
-                }
-            });
-        }
-        // Reflect axis extremes in the export (#5924)
-        chart.axes.forEach(function (axis) {
-            const axisCopy = find(chartCopy.axes, (copy) => copy.options.internalKey === axis.userOptions.internalKey);
-            if (axisCopy) {
-                const extremes = axis.getExtremes(), 
-                // Make sure min and max overrides in the
-                // `exporting.chartOptions.xAxis` settings are reflected.
-                // These should override user-set extremes via zooming,
-                // scrollbar etc (#7873).
-                exportOverride = splat(chartOptions?.[axis.coll] || {})[0], userMin = 'min' in exportOverride ?
-                    exportOverride.min :
-                    extremes.userMin, userMax = 'max' in exportOverride ?
-                    exportOverride.max :
-                    extremes.userMax;
-                if (((typeof userMin !== 'undefined' &&
-                    userMin !== axisCopy.min) || (typeof userMax !== 'undefined' &&
-                    userMax !== axisCopy.max))) {
-                    axisCopy.setExtremes(userMin ?? void 0, userMax ?? void 0, true, false);
-                }
-            }
-        });
-        // Get the SVG from the container's innerHTML
-        svg = chartCopy.getChartHTML(chart.styledMode ||
-            options.exporting?.applyStyleSheets);
-        Exporting_fireEvent(this, 'getSVG', { chartCopy: chartCopy });
-        svg = chart.sanitizeSVG(svg, options);
-        // Free up memory
-        options = null;
-        chartCopy.destroy();
-        discardElement(sandbox);
-        return svg;
-    }
-    /**
-     * @private
-     * @function Highcharts.Chart#getSVGForExport
-     */
-    function getSVGForExport(options, chartOptions) {
-        const chartExportingOptions = this.options.exporting;
-        return this.getSVG(merge({ chart: { borderRadius: 0 } }, chartExportingOptions.chartOptions, chartOptions, {
-            exporting: {
-                sourceWidth: ((options && options.sourceWidth) ||
-                    chartExportingOptions.sourceWidth),
-                sourceHeight: ((options && options.sourceHeight) ||
-                    chartExportingOptions.sourceHeight)
-            }
-        }));
-    }
-    /**
-     * Make hyphenated property names out of camelCase
-     * @private
-     * @param {string} prop
-     * Property name in camelCase
-     * @return {string}
-     * Hyphenated property name
-     */
-    function hyphenate(prop) {
-        return prop.replace(/[A-Z]/g, function (match) {
-            return '-' + match.toLowerCase();
-        });
-    }
-    /**
-     * Analyze inherited styles from stylesheets and add them inline
-     *
-     * @private
-     * @function Highcharts.Chart#inlineStyles
-     *
-     * @todo What are the border styles for text about? In general, text has a
-     *       lot of properties.
-     *
-     * @todo Make it work with IE9 and IE10.
-     *
-     * @requires modules/exporting
-     */
-    function inlineStyles() {
-        const denylist = inlineDenylist, allowlist = Exporting.inlineAllowlist, // For IE
-        defaultStyles = {};
-        let dummySVG;
-        // Create an iframe where we read default styles without pollution from
-        // this body
-        const iframe = Exporting_doc.createElement('iframe');
-        css(iframe, {
-            width: '1px',
-            height: '1px',
-            visibility: 'hidden'
-        });
-        Exporting_doc.body.appendChild(iframe);
-        const iframeDoc = (iframe.contentWindow && iframe.contentWindow.document);
-        if (iframeDoc) {
-            iframeDoc.body.appendChild(iframeDoc.createElementNS(SVG_NS, 'svg'));
-        }
-        /**
-         * Call this on all elements and recurse to children
-         * @private
-         * @param {Highcharts.HTMLDOMElement} node
-         *        Element child
-             */
-        function recurse(node) {
-            const filteredStyles = {};
-            let styles, parentStyles, dummy, denylisted, allowlisted, i;
-            /**
-             * Check computed styles and whether they are in the allow/denylist
-             * for styles or attributes.
-             * @private
-             * @param {string} val
-             *        Style value
-             * @param {string} prop
-             *        Style property name
-                     */
-            function filterStyles(val, prop) {
-                // Check against allowlist & denylist
-                denylisted = allowlisted = false;
-                if (allowlist.length) {
-                    // Styled mode in IE has a allowlist instead. Exclude all
-                    // props not in this list.
-                    i = allowlist.length;
-                    while (i-- && !allowlisted) {
-                        allowlisted = allowlist[i].test(prop);
-                    }
-                    denylisted = !allowlisted;
-                }
-                // Explicitly remove empty transforms
-                if (prop === 'transform' && val === 'none') {
-                    denylisted = true;
-                }
-                i = denylist.length;
-                while (i-- && !denylisted) {
-                    if (prop.length > 1000 /* RegexLimits.shortLimit */) {
-                        throw new Error('Input too long');
-                    }
-                    denylisted = (denylist[i].test(prop) ||
-                        typeof val === 'function');
-                }
-                if (!denylisted) {
-                    // If parent node has the same style, it gets inherited, no
-                    // need to inline it. Top-level props should be diffed
-                    // against parent (#7687).
-                    if ((parentStyles[prop] !== val ||
-                        node.nodeName === 'svg') &&
-                        defaultStyles[node.nodeName][prop] !== val) {
-                        // Attributes
-                        if (!inlineToAttributes ||
-                            inlineToAttributes.indexOf(prop) !== -1) {
-                            if (val) {
-                                node.setAttribute(hyphenate(prop), val);
-                            }
-                            // Styles
-                        }
-                        else {
-                            filteredStyles[prop] = val;
-                        }
-                    }
-                }
-            }
-            if (iframeDoc &&
-                node.nodeType === 1 &&
-                unstyledElements.indexOf(node.nodeName) === -1) {
-                styles = Exporting_win.getComputedStyle(node, null);
-                parentStyles = node.nodeName === 'svg' ?
-                    {} :
-                    Exporting_win.getComputedStyle(node.parentNode, null);
-                // Get default styles from the browser so that we don't have to
-                // add these
-                if (!defaultStyles[node.nodeName]) {
-                    /*
-                    If (!dummySVG) {
-                        dummySVG = doc.createElementNS(H.SVG_NS, 'svg');
-                        dummySVG.setAttribute('version', '1.1');
-                        doc.body.appendChild(dummySVG);
-                    }
-                    */
-                    dummySVG = iframeDoc.getElementsByTagName('svg')[0];
-                    dummy = iframeDoc.createElementNS(node.namespaceURI, node.nodeName);
-                    dummySVG.appendChild(dummy);
-                    // Get the defaults into a standard object (simple merge
-                    // won't do)
-                    const s = Exporting_win.getComputedStyle(dummy, null), defaults = {};
-                    for (const key in s) {
-                        if (key.length < 1000 /* RegexLimits.shortLimit */ &&
-                            typeof s[key] === 'string' &&
-                            !/^\d+$/.test(key)) {
-                            defaults[key] = s[key];
-                        }
-                    }
-                    defaultStyles[node.nodeName] = defaults;
-                    // Remove default fill, otherwise text disappears when
-                    // exported
-                    if (node.nodeName === 'text') {
-                        delete defaultStyles.text.fill;
-                    }
-                    dummySVG.removeChild(dummy);
-                }
-                // Loop through all styles and add them inline if they are ok
-                for (const p in styles) {
-                    if (
-                    // Some browsers put lots of styles on the prototype...
-                    (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isFirefox ||
-                        (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isMS ||
-                        (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari || // #16902
-                        // ... Chrome puts them on the instance
-                        Object.hasOwnProperty.call(styles, p)) {
-                        filterStyles(styles[p], p);
-                    }
-                }
-                // Apply styles
-                css(node, filteredStyles);
-                // Set default stroke width (needed at least for IE)
-                if (node.nodeName === 'svg') {
-                    node.setAttribute('stroke-width', '1px');
-                }
-                if (node.nodeName === 'text') {
-                    return;
-                }
-                // Recurse
-                [].forEach.call(node.children || node.childNodes, recurse);
-            }
-        }
-        /**
-         * Remove the dummy objects used to get defaults
-         * @private
-         */
-        function tearDown() {
-            dummySVG.parentNode.removeChild(dummySVG);
-            // Remove trash from DOM that stayed after each exporting
-            iframe.parentNode.removeChild(iframe);
-        }
-        recurse(this.container.querySelector('svg'));
-        tearDown();
-    }
-    /**
-     * Resolve CSS variables into hex colors
-     */
-    function resolveCSSVariables() {
-        const svgElements = this.container.querySelectorAll('*'), colorAttributes = ['color', 'fill', 'stop-color', 'stroke'];
-        Array.from(svgElements).forEach((element) => {
-            colorAttributes.forEach((attr) => {
-                const attrValue = element.getAttribute(attr);
-                if (attrValue?.includes('var(')) {
-                    element.setAttribute(attr, getComputedStyle(element).getPropertyValue(attr));
-                }
-            });
-        });
-    }
-    /**
-     * Move the chart container(s) to another div.
-     *
-     * @function Highcharts#moveContainers
-     *
-     * @private
-     *
-     * @param {Highcharts.HTMLDOMElement} moveTo
-     *        Move target
-     */
-    function moveContainers(moveTo) {
-        const { scrollablePlotArea } = this;
-        (
-        // When scrollablePlotArea is active (#9533)
-        scrollablePlotArea ?
-            [
-                scrollablePlotArea.fixedDiv,
-                scrollablePlotArea.scrollingContainer
-            ] :
-            [this.container]).forEach(function (div) {
-            moveTo.appendChild(div);
-        });
-    }
-    /**
-     * Add update methods to handle chart.update and chart.exporting.update and
-     * chart.navigation.update. These must be added to the chart instance rather
-     * than the Chart prototype in order to use the chart instance inside the
-     * update function.
-     * @private
-     */
-    function onChartInit() {
-        const chart = this, 
-        /**
-         * @private
-         * @param {"exporting"|"navigation"} prop
-         *        Property name in option root
-         * @param {Highcharts.ExportingOptions|Highcharts.NavigationOptions} options
-         *        Options to update
-         * @param {boolean} [redraw=true]
-         *        Whether to redraw
-                 */
-        update = (prop, options, redraw) => {
-            chart.isDirtyExporting = true;
-            merge(true, chart.options[prop], options);
-            if (pick(redraw, true)) {
-                chart.redraw();
-            }
-        };
-        chart.exporting = {
-            update: function (options, redraw) {
-                update('exporting', options, redraw);
-            }
-        };
-        // Register update() method for navigation. Cannot be set the same way
-        // as for exporting, because navigation options are shared with bindings
-        // which has separate update() logic.
-        Chart_ChartNavigationComposition
-            .compose(chart).navigation
-            .addUpdate((options, redraw) => {
-            update('navigation', options, redraw);
-        });
-    }
-    /**
-     * On layout of titles (title, subtitle and caption), adjust the `alignTo``
-     * box to avoid the context menu button.
-     * @private
-     */
-    function onChartLayOutTitle({ alignTo, key, textPxLength }) {
-        const exportingOptions = this.options.exporting, { align, buttonSpacing = 0, verticalAlign, width = 0 } = merge(this.options.navigation?.buttonOptions, exportingOptions?.buttons?.contextButton), space = alignTo.width - textPxLength, widthAdjust = width + buttonSpacing;
-        if ((exportingOptions?.enabled ?? true) &&
-            key === 'title' &&
-            align === 'right' &&
-            verticalAlign === 'top') {
-            if (space < 2 * widthAdjust) {
-                if (space < widthAdjust) {
-                    alignTo.width -= widthAdjust;
-                }
-                else if (this.title?.alignValue !== 'left') {
-                    alignTo.x -= widthAdjust - space / 2;
-                }
-            }
-        }
-    }
-    /**
-     * Exporting module required. Clears away other elements in the page and
-     * prints the chart as it is displayed. By default, when the exporting
-     * module is enabled, a context button with a drop down menu in the upper
-     * right corner accesses this function.
-     *
-     * @sample highcharts/members/chart-print/
-     *         Print from a HTML button
-     *
-     * @function Highcharts.Chart#print
-     *
-     *
-     * @emits Highcharts.Chart#event:beforePrint
-     * @emits Highcharts.Chart#event:afterPrint
-     *
-     * @requires modules/exporting
-     */
-    function print() {
-        const chart = this;
-        if (chart.isPrinting) { // Block the button while in printing mode
-            return;
-        }
-        printingChart = chart;
-        if (!(highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari) {
-            chart.beforePrint();
-        }
-        // Give the browser time to draw WebGL content, an issue that randomly
-        // appears (at least) in Chrome ~67 on the Mac (#8708).
-        setTimeout(() => {
-            Exporting_win.focus(); // #1510
-            Exporting_win.print();
-            // Allow the browser to prepare before reverting
-            if (!(highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isSafari) {
-                setTimeout(() => {
-                    chart.afterPrint();
-                }, 1000);
-            }
-        }, 1);
-    }
-    /**
-     * Add the buttons on chart load
-     * @private
-     * @function Highcharts.Chart#renderExporting
-     * @requires modules/exporting
-     */
-    function renderExporting() {
-        const chart = this, exportingOptions = chart.options.exporting, buttons = exportingOptions.buttons, isDirty = chart.isDirtyExporting || !chart.exportSVGElements;
-        chart.buttonOffset = 0;
-        if (chart.isDirtyExporting) {
-            chart.destroyExport();
-        }
-        if (isDirty && exportingOptions.enabled !== false) {
-            chart.exportEvents = [];
-            chart.exportingGroup = chart.exportingGroup ||
-                chart.renderer.g('exporting-group').attr({
-                    zIndex: 3 // #4955, // #8392
-                }).add();
-            objectEach(buttons, function (button) {
-                chart.addButton(button);
-            });
-            chart.isDirtyExporting = false;
-        }
-    }
-    /**
-     * Exporting module only. A collection of fixes on the produced SVG to
-     * account for expand properties, browser bugs.
-     * Returns a cleaned SVG.
-     *
-     * @private
-     * @function Highcharts.Chart#sanitizeSVG
-     * @param {string} svg
-     *        SVG code to sanitize
-     * @param {Highcharts.Options} options
-     *        Chart options to apply
-     * @return {string}
-     *         Sanitized SVG code
-     * @requires modules/exporting
-     */
-    function sanitizeSVG(svg, options) {
-        const split = svg.indexOf('</svg>') + 6, useForeignObject = svg.indexOf('<foreignObject') > -1;
-        let html = svg.substr(split);
-        // Remove any HTML added to the container after the SVG (#894, #9087)
-        svg = svg.substr(0, split);
-        if (useForeignObject) {
-            // Some tags needs to be closed in xhtml (#13726)
-            svg = svg.replace(/(<(?:img|br).*?(?=\>))>/g, '$1 />');
-            // Move HTML into a foreignObject
-        }
-        else if (html && options?.exporting?.allowHTML) {
-            html = '<foreignObject x="0" y="0" ' +
-                'width="' + options.chart.width + '" ' +
-                'height="' + options.chart.height + '">' +
-                '<body xmlns="http://www.w3.org/1999/xhtml">' +
-                // Some tags needs to be closed in xhtml (#13726)
-                html.replace(/(<(?:img|br).*?(?=\>))>/g, '$1 />') +
-                '</body>' +
-                '</foreignObject>';
-            svg = svg.replace('</svg>', html + '</svg>');
-        }
-        svg = svg
-            .replace(/zIndex="[^"]+"/g, '')
-            .replace(/symbolName="[^"]+"/g, '')
-            .replace(/jQuery\d+="[^"]+"/g, '')
-            .replace(/url\(("|&quot;)(.*?)("|&quot;)\;?\)/g, 'url($2)')
-            .replace(/url\([^#]+#/g, 'url(#')
-            .replace(/<svg /, '<svg xmlns:xlink="http://www.w3.org/1999/xlink" ')
-            .replace(/ (NS\d+\:)?href=/g, ' xlink:href=') // #3567
-            .replace(/\n+/g, ' ')
-            // Replace HTML entities, issue #347
-            .replace(/&nbsp;/g, '\u00A0') // No-break space
-            .replace(/&shy;/g, '\u00AD'); // Soft hyphen
-        return svg;
-    }
-})(Exporting || (Exporting = {}));
-/* *
- *
- *  Default Export
- *
- * */
-/* harmony default export */ const Exporting_Exporting = (Exporting);
-/* *
- *
- *  API Declarations
- *
- * */
-/**
- * Gets fired after a chart is printed through the context menu item or the
- * Chart.print method.
- *
- * @callback Highcharts.ExportingAfterPrintCallbackFunction
- *
- * @param {Highcharts.Chart} this
- *        The chart on which the event occurred.
- *
- * @param {global.Event} event
- *        The event that occurred.
- */
-/**
- * Gets fired before a chart is printed through the context menu item or the
- * Chart.print method.
- *
- * @callback Highcharts.ExportingBeforePrintCallbackFunction
- *
- * @param {Highcharts.Chart} this
- *        The chart on which the event occurred.
- *
- * @param {global.Event} event
- *        The event that occurred.
- */
-/**
- * Function to call if the offline-exporting module fails to export a chart on
- * the client side.
- *
- * @callback Highcharts.ExportingErrorCallbackFunction
- *
- * @param {Highcharts.ExportingOptions} options
- *        The exporting options.
- *
- * @param {global.Error} err
- *        The error from the module.
- */
-/**
- * Definition for a menu item in the context menu.
- *
- * @interface Highcharts.ExportingMenuObject
- */ /**
-* The text for the menu item.
-*
-* @name Highcharts.ExportingMenuObject#text
-* @type {string|undefined}
-*/ /**
-* If internationalization is required, the key to a language string.
-*
-* @name Highcharts.ExportingMenuObject#textKey
-* @type {string|undefined}
-*/ /**
-* The click handler for the menu item.
-*
-* @name Highcharts.ExportingMenuObject#onclick
-* @type {Highcharts.EventCallbackFunction<Highcharts.Chart>|undefined}
-*/ /**
-* Indicates a separator line instead of an item.
-*
-* @name Highcharts.ExportingMenuObject#separator
-* @type {boolean|undefined}
-*/
-/**
- * Possible MIME types for exporting.
- *
- * @typedef {"image/png"|"image/jpeg"|"application/pdf"|"image/svg+xml"} Highcharts.ExportingMimeTypeValue
- */
-(''); // Keeps doclets above in transpiled file
-/* *
- *
- *  API Options
- *
- * */
-/**
- * Fires after a chart is printed through the context menu item or the
- * `Chart.print` method.
- *
- * @sample highcharts/chart/events-beforeprint-afterprint/
- *         Rescale the chart to print
- *
- * @type      {Highcharts.ExportingAfterPrintCallbackFunction}
- * @since     4.1.0
- * @context   Highcharts.Chart
- * @requires  modules/exporting
- * @apioption chart.events.afterPrint
- */
-/**
- * Fires before a chart is printed through the context menu item or
- * the `Chart.print` method.
- *
- * @sample highcharts/chart/events-beforeprint-afterprint/
- *         Rescale the chart to print
- *
- * @type      {Highcharts.ExportingBeforePrintCallbackFunction}
- * @since     4.1.0
- * @context   Highcharts.Chart
- * @requires  modules/exporting
- * @apioption chart.events.beforePrint
- */
-(''); // Keeps doclets above in transpiled file
-
+var highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_default = /*#__PURE__*/__webpack_require__.n(highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_);
 ;// ./code/es-modules/Extensions/OfflineExporting/OfflineExportingDefaults.js
 /* *
  *
@@ -174337,51 +172737,22 @@ var Exporting;
 
 /* *
  *
- * Declarations
+ *  API Options
  *
  * */
-const OfflineExportingDefaults = {
-    libURL: 'https://code.highcharts.com/12.2.0/lib/',
-    // When offline-exporting is loaded, redefine the menu item definitions
-    // related to download.
-    menuItemDefinitions: {
-        downloadPNG: {
-            textKey: 'downloadPNG',
-            onclick: function () {
-                this.exportChartLocal();
-            }
-        },
-        downloadJPEG: {
-            textKey: 'downloadJPEG',
-            onclick: function () {
-                this.exportChartLocal({
-                    type: 'image/jpeg'
-                });
-            }
-        },
-        downloadSVG: {
-            textKey: 'downloadSVG',
-            onclick: function () {
-                this.exportChartLocal({
-                    type: 'image/svg+xml'
-                });
-            }
-        },
-        downloadPDF: {
-            textKey: 'downloadPDF',
-            onclick: function () {
-                this.exportChartLocal({
-                    type: 'application/pdf'
-                });
-            }
-        }
-    }
-};
+/**
+ * @optionparent exporting
+ * @private
+ */
+const exporting = {};
 /* *
  *
  *  Default Export
  *
  * */
+const OfflineExportingDefaults = {
+    exporting
+};
 /* harmony default export */ const OfflineExporting_OfflineExportingDefaults = (OfflineExportingDefaults);
 
 ;// ./code/es-modules/Extensions/OfflineExporting/OfflineExporting.js
@@ -174400,19 +172771,14 @@ const OfflineExportingDefaults = {
 
 
 
-const { defaultOptions: OfflineExporting_defaultOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
+const { getOptions, setOptions } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 
-const { downloadURL: OfflineExporting_downloadURL } = Extensions_DownloadURL;
+const { downloadURL: OfflineExporting_downloadURL, getScript: OfflineExporting_getScript } = Extensions_DownloadURL;
 
-
-const { doc: OfflineExporting_doc, win: OfflineExporting_win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-
-const { ajax } = (highcharts_HttpUtilities_commonjs_highcharts_HttpUtilities_commonjs2_highcharts_HttpUtilities_root_Highcharts_HttpUtilities_default());
+const { composed, doc: OfflineExporting_doc, win: OfflineExporting_win } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 
 
-const { addEvent: OfflineExporting_addEvent, error, extend: OfflineExporting_extend, fireEvent: OfflineExporting_fireEvent, merge: OfflineExporting_merge } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
-highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().allowedAttributes.push('data-z-index', 'fill-opacity', 'filter', 'rx', 'ry', 'stroke-dasharray', 'stroke-linejoin', 'stroke-opacity', 'text-anchor', 'transform', 'version', 'viewBox', 'visibility', 'xmlns', 'xmlns:xlink');
-highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().allowedTags.push('desc', 'clippath', 'g');
+const { addEvent, extend, pushUnique } = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default());
 /* *
  *
  *  Composition
@@ -174422,37 +172788,70 @@ var OfflineExporting;
 (function (OfflineExporting) {
     /* *
      *
-     *  Declarations
-     *
-     * */
-    /* *
-     *
-     *  Constants
-     *
-     * */
-    // Dummy object so we can reuse our canvas-tools.js without errors
-    OfflineExporting.CanVGRenderer = {}, OfflineExporting.domurl = OfflineExporting_win.URL || OfflineExporting_win.webkitURL || OfflineExporting_win, 
-    // Milliseconds to defer image load event handlers to offset IE bug
-    OfflineExporting.loadEventDeferDelay = (highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isMS ? 150 : 0;
-    /* *
-     *
      *  Functions
      *
      * */
-    /* eslint-disable valid-jsdoc */
     /**
-     * Extends OfflineExporting with Chart.
+     * Composition function.
+     *
      * @private
+     * @function compose
+     *
+     * @param {ExportingClass} ExportingClass
+     * Exporting class.
+     *
+     * @requires modules/exporting
+     * @requires modules/offline-exporting
      */
-    function compose(ChartClass) {
-        const chartProto = ChartClass.prototype;
-        if (!chartProto.exportChartLocal) {
-            chartProto.getSVGForLocalExport = getSVGForLocalExport;
-            chartProto.exportChartLocal = exportChartLocal;
-            // Extend the default options to use the local exporter logic
-            OfflineExporting_merge(true, OfflineExporting_defaultOptions.exporting, OfflineExporting_OfflineExportingDefaults);
+    function compose(ExportingClass) {
+        // Add the downloadSVG event to the Exporting class for local PDF export
+        addEvent(ExportingClass, 'downloadSVG', async function (e) {
+            const { svg, exportingOptions, exporting, preventDefault } = e;
+            // Check if PDF export is requested
+            if (exportingOptions?.type === 'application/pdf') {
+                // Prevent the default export behavior
+                preventDefault?.();
+                // Run the PDF local export
+                try {
+                    // Get the final image options
+                    const { type, filename, scale, libURL } = highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().Exporting.prepareImageOptions(exportingOptions);
+                    // Local PDF download
+                    if (type === 'application/pdf') {
+                        // Must load pdf libraries first if not found. Don't
+                        // destroy the object URL yet since we are doing
+                        // things asynchronously
+                        if (!OfflineExporting_win.jspdf?.jsPDF) {
+                            // Get jspdf
+                            await OfflineExporting_getScript(`${libURL}jspdf.js`);
+                            // Get svg2pdf
+                            await OfflineExporting_getScript(`${libURL}svg2pdf.js`);
+                        }
+                        // Call the PDF download if SVG element found
+                        await downloadPDF(svg, scale, filename, exportingOptions?.pdfFont);
+                    }
+                }
+                catch (error) {
+                    // Try to fallback to the server
+                    await exporting?.fallbackToServer(exportingOptions, error);
+                }
+            }
+        });
+        // Check the composition registry for the OfflineExporting
+        if (!pushUnique(composed, 'OfflineExporting')) {
+            return;
         }
-        return ChartClass;
+        // Adding wrappers for the deprecated functions
+        extend((highcharts_Chart_commonjs_highcharts_Chart_commonjs2_highcharts_Chart_root_Highcharts_Chart_default()).prototype, {
+            exportChartLocal: async function (exportingOptions, chartOptions) {
+                await this.exporting?.exportChart(exportingOptions, chartOptions);
+                return;
+            }
+        });
+        // Update with defaults of the offline exporting module
+        setOptions(OfflineExporting_OfflineExportingDefaults);
+        // Additionaly, extend the menuItems with the offline exporting variants
+        const menuItems = getOptions().exporting?.buttons?.contextButton?.menuItems;
+        menuItems && menuItems.push('downloadPDF');
     }
     OfflineExporting.compose = compose;
     /**
@@ -174470,6 +172869,7 @@ var OfflineExporting;
      * Highcharts options pointing to our server.
      *
      * @function Highcharts.downloadSVGLocal
+     * @deprecated
      *
      * @param {string} svg
      * The generated SVG
@@ -174477,586 +172877,234 @@ var OfflineExporting;
      * @param {Highcharts.ExportingOptions} options
      * The exporting options
      *
-     * @param {Function} failCallback
-     * The callback function in case of errors
-     *
-     * @param {Function} [successCallback]
-     * The callback function in case of success
-     *
      */
-    function downloadSVGLocal(svg, options, failCallback, successCallback) {
-        const dummySVGContainer = OfflineExporting_doc.createElement('div'), imageType = options.type || 'image/png', filename = ((options.filename || 'chart') +
-            '.' +
-            (imageType === 'image/svg+xml' ?
-                'svg' : imageType.split('/')[1])), scale = options.scale || 1;
-        let svgurl, blob, finallyHandler, libURL = (options.libURL || OfflineExporting_defaultOptions.exporting.libURL), objectURLRevoke = true, pdfFont = options.pdfFont;
-        // Allow libURL to end with or without fordward slash
-        libURL = libURL.slice(-1) !== '/' ? libURL + '/' : libURL;
-        /*
-         * Detect if we need to load TTF fonts for the PDF, then load them and
-         * proceed.
-         *
-         * @private
-         */
-        const loadPdfFonts = (svgElement, callback) => {
-            const hasNonASCII = (s) => (
-            // eslint-disable-next-line no-control-regex
-            /[^\u0000-\u007F\u200B]+/.test(s));
-            // Register an event in order to add the font once jsPDF is
-            // initialized
-            const addFont = (variant, base64) => {
-                OfflineExporting_win.jspdf.jsPDF.API.events.push([
-                    'initialized',
-                    function () {
-                        this.addFileToVFS(variant, base64);
-                        this.addFont(variant, 'HighchartsFont', variant);
-                        if (!this.getFontList().HighchartsFont) {
-                            this.setFont('HighchartsFont');
-                        }
-                    }
-                ]);
-            };
-            // If there are no non-ASCII characters in the SVG, do not use
-            // bother downloading the font files
-            if (pdfFont && !hasNonASCII(svgElement.textContent || '')) {
-                pdfFont = void 0;
-            }
-            // Add new font if the URL is declared, #6417.
-            const variants = ['normal', 'italic', 'bold', 'bolditalic'];
-            // Shift the first element off the variants and add as a font.
-            // Then asynchronously trigger the next variant until calling the
-            // callback when the variants are empty.
-            let normalBase64;
-            const shiftAndLoadVariant = () => {
-                const variant = variants.shift();
-                // All variants shifted and possibly loaded, proceed
-                if (!variant) {
-                    return callback();
-                }
-                const url = pdfFont && pdfFont[variant];
-                if (url) {
-                    ajax({
-                        url,
-                        responseType: 'blob',
-                        success: (data, xhr) => {
-                            const reader = new FileReader();
-                            reader.onloadend = function () {
-                                if (typeof this.result === 'string') {
-                                    const base64 = this.result.split(',')[1];
-                                    addFont(variant, base64);
-                                    if (variant === 'normal') {
-                                        normalBase64 = base64;
-                                    }
-                                }
-                                shiftAndLoadVariant();
-                            };
-                            reader.readAsDataURL(xhr.response);
-                        },
-                        error: shiftAndLoadVariant
-                    });
-                }
-                else {
-                    // For other variants, fall back to normal text weight/style
-                    if (normalBase64) {
-                        addFont(variant, normalBase64);
-                    }
-                    shiftAndLoadVariant();
-                }
-            };
-            shiftAndLoadVariant();
-        };
-        /*
-         * @private
-         */
-        const downloadPDF = () => {
-            highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().setElementHTML(dummySVGContainer, svg);
-            const textElements = dummySVGContainer.getElementsByTagName('text'), 
-            // Copy style property to element from parents if it's not
-            // there. Searches up hierarchy until it finds prop, or hits the
-            // chart container.
-            setStylePropertyFromParents = function (el, propName) {
-                let curParent = el;
-                while (curParent && curParent !== dummySVGContainer) {
-                    if (curParent.style[propName]) {
-                        let value = curParent.style[propName];
-                        if (propName === 'fontSize' && /em$/.test(value)) {
-                            value = Math.round(parseFloat(value) * 16) + 'px';
-                        }
-                        el.style[propName] = value;
-                        break;
-                    }
-                    curParent = curParent.parentNode;
-                }
-            };
-            let titleElements, outlineElements;
-            // Workaround for the text styling. Making sure it does pick up
-            // settings for parent elements.
-            [].forEach.call(textElements, function (el) {
-                // Workaround for the text styling. making sure it does pick up
-                // the root element
-                ['fontFamily', 'fontSize']
-                    .forEach((property) => {
-                    setStylePropertyFromParents(el, property);
-                });
-                el.style.fontFamily = pdfFont && pdfFont.normal ?
-                    // Custom PDF font
-                    'HighchartsFont' :
-                    // Generic font (serif, sans-serif etc)
-                    String(el.style.fontFamily &&
-                        el.style.fontFamily.split(' ').splice(-1));
-                // Workaround for plotband with width, removing title from text
-                // nodes
-                titleElements = el.getElementsByTagName('title');
-                [].forEach.call(titleElements, function (titleElement) {
-                    el.removeChild(titleElement);
-                });
-                // Remove all .highcharts-text-outline elements, #17170
-                outlineElements =
-                    el.getElementsByClassName('highcharts-text-outline');
-                while (outlineElements.length > 0) {
-                    const outline = outlineElements[0];
-                    if (outline.parentNode) {
-                        outline.parentNode.removeChild(outline);
-                    }
-                }
-            });
-            const svgNode = dummySVGContainer.querySelector('svg');
-            if (svgNode) {
-                loadPdfFonts(svgNode, () => {
-                    svgToPdf(svgNode, 0, scale, (pdfData) => {
-                        try {
-                            OfflineExporting_downloadURL(pdfData, filename);
-                            if (successCallback) {
-                                successCallback();
-                            }
-                        }
-                        catch (e) {
-                            failCallback(e);
-                        }
-                    });
-                });
-            }
-        };
-        // Initiate download depending on file type
-        if (imageType === 'image/svg+xml') {
-            // SVG download. In this case, we want to use Microsoft specific
-            // Blob if available
-            try {
-                if (typeof OfflineExporting_win.MSBlobBuilder !== 'undefined') {
-                    blob = new OfflineExporting_win.MSBlobBuilder();
-                    blob.append(svg);
-                    svgurl = blob.getBlob('image/svg+xml');
-                }
-                else {
-                    svgurl = svgToDataUrl(svg);
-                }
-                OfflineExporting_downloadURL(svgurl, filename);
-                if (successCallback) {
-                    successCallback();
-                }
-            }
-            catch (e) {
-                failCallback(e);
-            }
-        }
-        else if (imageType === 'application/pdf') {
-            if (OfflineExporting_win.jspdf && OfflineExporting_win.jspdf.jsPDF) {
-                downloadPDF();
-            }
-            else {
-                // Must load pdf libraries first. // Don't destroy the object
-                // URL yet since we are doing things asynchronously. A cleaner
-                // solution would be nice, but this will do for now.
-                objectURLRevoke = true;
-                getScript(libURL + 'jspdf.js', function () {
-                    getScript(libURL + 'svg2pdf.js', downloadPDF);
-                });
-            }
-        }
-        else {
-            // PNG/JPEG download - create bitmap from SVG
-            svgurl = svgToDataUrl(svg);
-            finallyHandler = function () {
-                try {
-                    OfflineExporting.domurl.revokeObjectURL(svgurl);
-                }
-                catch (e) {
-                    // Ignore
-                }
-            };
-            // First, try to get PNG by rendering on canvas
-            imageToDataUrl(svgurl, imageType, {}, scale, function (imageURL) {
-                // Success
-                try {
-                    OfflineExporting_downloadURL(imageURL, filename);
-                    if (successCallback) {
-                        successCallback();
-                    }
-                }
-                catch (e) {
-                    failCallback(e);
-                }
-            }, function () {
-                if (svg.length > 100000000 /* RegexLimits.svgLimit */) {
-                    throw new Error('Input too long');
-                }
-                // Failed due to tainted canvas
-                // Create new and untainted canvas
-                const canvas = OfflineExporting_doc.createElement('canvas'), ctx = canvas.getContext('2d'), matchedImageWidth = svg.match(
-                // eslint-disable-next-line max-len
-                /^<svg[^>]*\s{,1000}width\s{,1000}=\s{,1000}\"?(\d+)\"?[^>]*>/), matchedImageHeight = svg.match(
-                // eslint-disable-next-line max-len
-                /^<svg[^>]*\s{0,1000}height\s{,1000}=\s{,1000}\"?(\d+)\"?[^>]*>/);
-                if (ctx && matchedImageWidth && matchedImageHeight) {
-                    const imageWidth = +matchedImageWidth[1] * scale, imageHeight = +matchedImageHeight[1] * scale, downloadWithCanVG = () => {
-                        const v = OfflineExporting_win.canvg.Canvg.fromString(ctx, svg);
-                        v.start();
-                        try {
-                            OfflineExporting_downloadURL(OfflineExporting_win.navigator.msSaveOrOpenBlob ?
-                                canvas.msToBlob() :
-                                canvas.toDataURL(imageType), filename);
-                            if (successCallback) {
-                                successCallback();
-                            }
-                        }
-                        catch (e) {
-                            failCallback(e);
-                        }
-                        finally {
-                            finallyHandler();
-                        }
-                    };
-                    canvas.width = imageWidth;
-                    canvas.height = imageHeight;
-                    if (OfflineExporting_win.canvg) {
-                        // Use preloaded canvg
-                        downloadWithCanVG();
-                    }
-                    else {
-                        // Must load canVG first.
-                        // Don't destroy the object URL yet since we are
-                        // doing things asynchronously. A cleaner solution
-                        // would be nice, but this will do for now.
-                        objectURLRevoke = true;
-                        getScript(libURL + 'canvg.js', downloadWithCanVG);
-                    }
-                }
-            }, 
-            // No canvas support
-            failCallback, 
-            // Failed to load image
-            failCallback, 
-            // Finally
-            function () {
-                if (objectURLRevoke) {
-                    finallyHandler();
-                }
-            });
-        }
+    async function downloadSVGLocal(svg, options) {
+        await highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default().Exporting.prototype.downloadSVG.call(void 0, svg, options);
     }
     OfflineExporting.downloadSVGLocal = downloadSVGLocal;
-    /* eslint-disable valid-jsdoc */
     /**
-     * Exporting and offline-exporting modules required. Export a chart to
-     * an image locally in the user's browser.
+     * Converts an SVG string into a PDF file and triggers its download. This
+     * function processes the SVG, applies necessary font adjustments, converts
+     * it to a PDF, and initiates the file download.
      *
-     * @function Highcharts.Chart#exportChartLocal
+     * @private
+     * @async
+     * @function downloadPDF
      *
-     * @param  {Highcharts.ExportingOptions} [exportingOptions]
-     *         Exporting options, the same as in
-     *         {@link Highcharts.Chart#exportChart}.
+     * @param {string} svg
+     * A string representation of the SVG markup to be converted into a PDF.
+     * @param {number} scale
+     * The scaling factor for the PDF output.
+     * @param {string} filename
+     * The name of the downloaded PDF file.
+     * @param {Highcharts.PdfFontOptions} [pdfFont]
+     * An optional object specifying URLs for different font variants (normal,
+     * bold, italic, bolditalic).
      *
-     * @param  {Highcharts.Options} [chartOptions]
-     *         Additional chart options for the exported chart. For example
-     *         a different background color can be added here, or
-     *         `dataLabels` for export only.
-     *
+     * @return {Promise<void>}
+     * A promise that resolves when the PDF has been successfully generated and
+     * downloaded.
      *
      * @requires modules/exporting
      * @requires modules/offline-exporting
      */
-    function exportChartLocal(exportingOptions, chartOptions) {
-        const chart = this, options = OfflineExporting_merge(chart.options.exporting, exportingOptions), fallbackToExportServer = function (err) {
-            if (options.fallbackToExportServer === false) {
-                if (options.error) {
-                    options.error(options, err);
-                }
-                else {
-                    error(28, true); // Fallback disabled
-                }
-            }
-            else {
-                chart.exportChart(options);
-            }
-        }, svgSuccess = function (svg) {
-            // If SVG contains foreignObjects PDF fails in all browsers
-            // and all exports except SVG will fail in IE, as both CanVG
-            // and svg2pdf choke on this. Gracefully fall back.
-            if (svg.indexOf('<foreignObject') > -1 &&
-                options.type !== 'image/svg+xml' &&
-                ((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isMS || options.type === 'application/pdf')) {
-                fallbackToExportServer(new Error('Image type not supported for charts with embedded HTML'));
-            }
-            else {
-                OfflineExporting.downloadSVGLocal(svg, OfflineExporting_extend({ filename: chart.getFilename() }, options), fallbackToExportServer, () => OfflineExporting_fireEvent(chart, 'exportChartLocalSuccess'));
-            }
-        }, 
-        // Return true if the SVG contains images with external data. With
-        // the boost module there are `image` elements with encoded PNGs,
-        // these are supported by svg2pdf and should pass (#10243).
-        hasExternalImages = function () {
-            return [].some.call(chart.container.getElementsByTagName('image'), function (image) {
-                const href = image.getAttribute('href');
-                return (href !== '' &&
-                    typeof href === 'string' &&
-                    href.indexOf('data:') !== 0);
-            });
-        };
-        // If we are on IE and in styled mode, add an allowlist to the renderer
-        // for inline styles that we want to pass through. There are so many
-        // styles by default in IE that we don't want to denylist them all.
-        if ((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isMS && chart.styledMode && !Exporting_Exporting.inlineAllowlist.length) {
-            Exporting_Exporting.inlineAllowlist.push(/^blockSize/, /^border/, /^caretColor/, /^color/, /^columnRule/, /^columnRuleColor/, /^cssFloat/, /^cursor/, /^fill$/, /^fillOpacity/, /^font/, /^inlineSize/, /^length/, /^lineHeight/, /^opacity/, /^outline/, /^parentRule/, /^rx$/, /^ry$/, /^stroke/, /^textAlign/, /^textAnchor/, /^textDecoration/, /^transform/, /^vectorEffect/, /^visibility/, /^x$/, /^y$/);
+    async function downloadPDF(svg, scale, filename, pdfFont) {
+        const svgNode = preparePDF(svg, pdfFont);
+        if (svgNode) {
+            // Loads all required fonts
+            await loadPdfFonts(svgNode, pdfFont);
+            // Transform SVG to PDF
+            const pdfData = await svgToPdf(svgNode, 0, scale);
+            // Download the PDF
+            OfflineExporting_downloadURL(pdfData, filename);
         }
-        // Always fall back on:
-        // - MS browsers: Embedded images JPEG/PNG, or any PDF
-        // - Embedded images and PDF
-        if (((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()).isMS &&
-            (options.type === 'application/pdf' ||
-                chart.container.getElementsByTagName('image').length &&
-                    options.type !== 'image/svg+xml')) || (options.type === 'application/pdf' &&
-            hasExternalImages())) {
-            fallbackToExportServer(new Error('Image type not supported for this chart/browser.'));
-            return;
-        }
-        chart.getSVGForLocalExport(options, chartOptions || {}, fallbackToExportServer, svgSuccess);
     }
     /**
-     * Downloads a script and executes a callback when done.
+     * Loads and registers custom fonts for PDF export if non-ASCII characters
+     * are detected in the given SVG element. This function ensures that text
+     * content with special characters is properly rendered in the exported PDF.
+     *
+     * It fetches font files (if provided in `pdfFont`), converts them to
+     * base64, and registers them with jsPDF.
      *
      * @private
-     * @function getScript
-     * @param {string} scriptLocation
-     * @param {Function} callback
-     */
-    function getScript(scriptLocation, callback) {
-        const head = OfflineExporting_doc.getElementsByTagName('head')[0], script = OfflineExporting_doc.createElement('script');
-        script.type = 'text/javascript';
-        script.src = scriptLocation;
-        script.onload = callback;
-        script.onerror = function () {
-            error('Error loading script ' + scriptLocation);
-        };
-        head.appendChild(script);
-    }
-    OfflineExporting.getScript = getScript;
-    /**
-     * Get SVG of chart prepared for client side export. This converts
-     * embedded images in the SVG to data URIs. It requires the regular
-     * exporting module. The options and chartOptions arguments are passed
-     * to the getSVGForExport function.
+     * @function loadPdfFonts
      *
-     * @private
-     * @function Highcharts.Chart#getSVGForLocalExport
-     * @param {Highcharts.ExportingOptions} options
-     * @param {Highcharts.Options} chartOptions
-     * @param {Function} failCallback
-     * @param {Function} successCallback
+     * @param {SVGElement} svgElement
+     * The generated SVG element containing the text content to be exported.
+     * @param {Highcharts.PdfFontOptions} [pdfFont]
+     * An optional object specifying URLs for different font variants (normal,
+     * bold, italic, bolditalic). If non-ASCII characters are not detected,
+     * fonts are not loaded.
+     *
+     * @requires modules/exporting
+     * @requires modules/offline-exporting
      */
-    function getSVGForLocalExport(options, chartOptions, failCallback, successCallback) {
-        const chart = this, 
-        // After grabbing the SVG of the chart's copy container we need
-        // to do sanitation on the SVG
-        sanitize = (svg) => chart.sanitizeSVG(svg, chartCopyOptions), 
-        // When done with last image we have our SVG
-        checkDone = () => {
-            if (images && imagesEmbedded === imagesLength) {
-                successCallback(sanitize(chartCopyContainer.innerHTML));
-            }
-        }, 
-        // Success handler, we converted image to base64!
-        embeddedSuccess = (imageURL, imageType, callbackArgs) => {
-            ++imagesEmbedded;
-            // Change image href in chart copy
-            callbackArgs.imageElement.setAttributeNS('http://www.w3.org/1999/xlink', 'href', imageURL);
-            checkDone();
-        };
-        let el, chartCopyContainer, chartCopyOptions, href = null, images, imagesLength = 0, imagesEmbedded = 0;
-        // Hook into getSVG to get a copy of the chart copy's
-        // container (#8273)
-        chart.unbindGetSVG = OfflineExporting_addEvent(chart, 'getSVG', (e) => {
-            chartCopyOptions = e.chartCopy.options;
-            chartCopyContainer = e.chartCopy.container.cloneNode(true);
-            images = chartCopyContainer && chartCopyContainer
-                .getElementsByTagName('image') || [];
-            imagesLength = images.length;
-        });
-        // Trigger hook to get chart copy
-        chart.getSVGForExport(options, chartOptions);
-        try {
-            // If there are no images to embed, the SVG is okay now.
-            if (!images || !images.length) {
-                // Use SVG of chart copy
-                successCallback(sanitize(chartCopyContainer.innerHTML));
-                return;
-            }
-            // Go through the images we want to embed
-            for (let i = 0; i < images.length; i++) {
-                el = images[i];
-                href = el.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
-                if (href) {
-                    OfflineExporting.imageToDataUrl(href, 'image/png', { imageElement: el }, options.scale, embeddedSuccess, 
-                    // Tainted canvas
-                    failCallback, 
-                    // No canvas support
-                    failCallback, 
-                    // Failed to load source
-                    failCallback);
-                    // Hidden, boosted series have blank href (#10243)
+    async function loadPdfFonts(svgElement, pdfFont) {
+        const hasNonASCII = (s) => (
+        // eslint-disable-next-line no-control-regex
+        /[^\u0000-\u007F\u200B]+/.test(s));
+        // Register an event in order to add the font once jsPDF is initialized
+        const addFont = (variant, base64) => {
+            OfflineExporting_win.jspdf.jsPDF.API.events.push([
+                'initialized',
+                function () {
+                    this.addFileToVFS(variant, base64);
+                    this.addFont(variant, 'HighchartsFont', variant);
+                    if (!this.getFontList()?.HighchartsFont) {
+                        this.setFont('HighchartsFont');
+                    }
                 }
-                else {
-                    imagesEmbedded++;
-                    el.parentNode.removeChild(el);
-                    i--;
-                    checkDone();
-                }
-            }
+            ]);
+        };
+        // If there are no non-ASCII characters in the SVG, do not use bother
+        // downloading the font files
+        if (pdfFont && !hasNonASCII(svgElement.textContent || '')) {
+            pdfFont = void 0;
         }
-        catch (e) {
-            failCallback(e);
-        }
-        // Clean up
-        chart.unbindGetSVG();
-    }
-    /**
-     * Get data:URL from image URL. Pass in callbacks to handle results.
-     *
-     * @private
-     * @function Highcharts.imageToDataUrl
-     *
-     * @param {string} imageURL
-     *
-     * @param {string} imageType
-     *
-     * @param {*} callbackArgs
-     *        callbackArgs is used only by callbacks.
-     *
-     * @param {number} scale
-     *
-     * @param {Function} successCallback
-     *        Receives four arguments: imageURL, imageType, callbackArgs,
-     *        and scale.
-     *
-     * @param {Function} taintedCallback
-     *        Receives four arguments: imageURL, imageType, callbackArgs,
-     *        and scale.
-     *
-     * @param {Function} noCanvasSupportCallback
-     *        Receives four arguments: imageURL, imageType, callbackArgs,
-     *        and scale.
-     *
-     * @param {Function} failedLoadCallback
-     *        Receives four arguments: imageURL, imageType, callbackArgs,
-     *        and scale.
-     *
-     * @param {Function} [finallyCallback]
-     *        finallyCallback is always called at the end of the process. All
-     *        callbacks receive four arguments: imageURL, imageType,
-     *        callbackArgs, and scale.
-     */
-    function imageToDataUrl(imageURL, imageType, callbackArgs, scale, successCallback, taintedCallback, noCanvasSupportCallback, failedLoadCallback, finallyCallback) {
-        let img = new OfflineExporting_win.Image(), taintedHandler;
-        const loadHandler = () => {
-            setTimeout(function () {
-                const canvas = OfflineExporting_doc.createElement('canvas'), ctx = canvas.getContext && canvas.getContext('2d');
-                let dataURL;
+        // Add new font if the URL is declared, #6417
+        const variants = ['normal', 'italic', 'bold', 'bolditalic'];
+        // Shift the first element off the variants and add as a font.
+        // Then asynchronously trigger the next variant until variants are empty
+        let normalBase64;
+        for (const variant of variants) {
+            const url = pdfFont?.[variant];
+            if (url) {
                 try {
-                    if (!ctx) {
-                        noCanvasSupportCallback(imageURL, imageType, callbackArgs, scale);
+                    const response = await OfflineExporting_win.fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch font: ${url}`);
                     }
-                    else {
-                        canvas.height = img.height * scale;
-                        canvas.width = img.width * scale;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        // Now we try to get the contents of the canvas.
-                        try {
-                            dataURL = canvas.toDataURL(imageType);
-                            successCallback(dataURL, imageType, callbackArgs, scale);
-                        }
-                        catch (e) {
-                            taintedHandler(imageURL, imageType, callbackArgs, scale);
-                        }
+                    const blob = await response.blob(), reader = new FileReader();
+                    const base64 = await new Promise((resolve, reject) => {
+                        reader.onloadend = () => {
+                            if (typeof reader.result === 'string') {
+                                resolve(reader.result.split(',')[1]);
+                            }
+                            else {
+                                reject(new Error('Failed to read font as base64'));
+                            }
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    addFont(variant, base64);
+                    if (variant === 'normal') {
+                        normalBase64 = base64;
                     }
                 }
-                finally {
-                    if (finallyCallback) {
-                        finallyCallback(imageURL, imageType, callbackArgs, scale);
-                    }
+                catch (e) {
+                    // If fetch or reading fails, fallback to next variant
                 }
-                // IE bug where image is not always ready despite calling load
-                // event.
-            }, OfflineExporting.loadEventDeferDelay);
-        }, 
-        // Image load failed (e.g. invalid URL)
-        errorHandler = () => {
-            failedLoadCallback(imageURL, imageType, callbackArgs, scale);
-            if (finallyCallback) {
-                finallyCallback(imageURL, imageType, callbackArgs, scale);
             }
-        };
-        // This is called on load if the image drawing to canvas failed with a
-        // security error. We retry the drawing with crossOrigin set to
-        // Anonymous.
-        taintedHandler = () => {
-            img = new OfflineExporting_win.Image();
-            taintedHandler = taintedCallback;
-            // Must be set prior to loading image source
-            img.crossOrigin = 'Anonymous';
-            img.onload = loadHandler;
-            img.onerror = errorHandler;
-            img.src = imageURL;
-        };
-        img.onload = loadHandler;
-        img.onerror = errorHandler;
-        img.src = imageURL;
+            else {
+                // For other variants, fall back to normal text weight/style
+                if (normalBase64) {
+                    addFont(variant, normalBase64);
+                }
+            }
+        }
     }
-    OfflineExporting.imageToDataUrl = imageToDataUrl;
     /**
-     * Get blob URL from SVG code. Falls back to normal data URI.
+     * Prepares an SVG for PDF export by ensuring proper text styling and
+     * removing unnecessary elements. This function extracts an SVG element from
+     * a given SVG string, applies font styles inherited from parent elements,
+     * and removes text outlines and title elements to improve PDF rendering.
      *
      * @private
-     * @function Highcharts.svgToDataURL
+     * @function preparePDF
+     *
+     * @param {string} svg
+     * A string representation of the SVG markup.
+     * @param {Highcharts.PdfFontOptions} [pdfFont]
+     * An optional object specifying URLs for different font variants (normal,
+     * bold, italic, bolditalic). If provided, the text elements are assigned a
+     * custom PDF font.
+     *
+     * @return {SVGSVGElement | null}
+     * Returns the parsed SVG element from the container or `null` if the SVG is
+     * not found.
+     *
+     * @requires modules/exporting
+     * @requires modules/offline-exporting
      */
-    function svgToDataUrl(svg) {
-        // Webkit and not chrome
-        const userAgent = OfflineExporting_win.navigator.userAgent;
-        const webKit = (userAgent.indexOf('WebKit') > -1 &&
-            userAgent.indexOf('Chrome') < 0);
-        try {
-            // Safari requires data URI since it doesn't allow navigation to
-            // blob URLs. ForeignObjects also don't work well in Blobs in Chrome
-            // (#14780).
-            if (!webKit && svg.indexOf('<foreignObject') === -1) {
-                return OfflineExporting.domurl.createObjectURL(new OfflineExporting_win.Blob([svg], {
-                    type: 'image/svg+xml;charset-utf-16'
-                }));
+    function preparePDF(svg, pdfFont) {
+        const dummySVGContainer = OfflineExporting_doc.createElement('div');
+        highcharts_AST_commonjs_highcharts_AST_commonjs2_highcharts_AST_root_Highcharts_AST_default().setElementHTML(dummySVGContainer, svg);
+        const textElements = dummySVGContainer.getElementsByTagName('text'), 
+        // Copy style property to element from parents if it's not there.
+        // Searches up hierarchy until it finds prop, or hits the chart
+        // container
+        setStylePropertyFromParents = function (el, propName) {
+            let curParent = el;
+            while (curParent && curParent !== dummySVGContainer) {
+                if (curParent.style[propName]) {
+                    let value = curParent.style[propName];
+                    if (propName === 'fontSize' && /em$/.test(value)) {
+                        value = Math.round(parseFloat(value) * 16) + 'px';
+                    }
+                    el.style[propName] = value;
+                    break;
+                }
+                curParent = curParent.parentNode;
             }
-        }
-        catch (e) {
-            // Ignore
-        }
-        return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+        };
+        let titleElements, outlineElements;
+        // Workaround for the text styling. Making sure it does pick up
+        // settings for parent elements.
+        [].forEach.call(textElements, function (el) {
+            // Workaround for the text styling. making sure it does pick up
+            // the root element
+            ['fontFamily', 'fontSize']
+                .forEach((property) => {
+                setStylePropertyFromParents(el, property);
+            });
+            el.style.fontFamily = pdfFont?.normal ?
+                // Custom PDF font
+                'HighchartsFont' :
+                // Generic font (serif, sans-serif etc)
+                String(el.style.fontFamily &&
+                    el.style.fontFamily.split(' ').splice(-1));
+            // Workaround for plotband with width, removing title from text
+            // nodes
+            titleElements = el.getElementsByTagName('title');
+            [].forEach.call(titleElements, function (titleElement) {
+                el.removeChild(titleElement);
+            });
+            // Remove all .highcharts-text-outline elements, #17170
+            outlineElements =
+                el.getElementsByClassName('highcharts-text-outline');
+            while (outlineElements.length > 0) {
+                const outline = outlineElements[0];
+                if (outline.parentNode) {
+                    outline.parentNode.removeChild(outline);
+                }
+            }
+        });
+        return dummySVGContainer.querySelector('svg');
     }
-    OfflineExporting.svgToDataUrl = svgToDataUrl;
-    /* eslint-disable valid-jsdoc */
     /**
+     * Transform from PDF to SVG.
+     *
+     * @async
      * @private
+     * @function svgToPdf
+     *
+     * @param {Highcharts.SVGElement} svgElement
+     * The SVG element to convert.
+     * @param {number} margin
+     * The margin to apply.
+     * @param {number} scale
+     * The scale of the SVG.
+     *
+     * @requires modules/exporting
+     * @requires modules/offline-exporting
      */
-    function svgToPdf(svgElement, margin, scale, callback) {
+    async function svgToPdf(svgElement, margin, scale) {
         const width = (Number(svgElement.getAttribute('width')) + 2 * margin) *
             scale, height = (Number(svgElement.getAttribute('height')) + 2 * margin) *
             scale, pdfDoc = new OfflineExporting_win.jspdf.jsPDF(// eslint-disable-line new-cap
-        // setting orientation to portrait if height exceeds width
+        // Setting orientation to portrait if height exceeds width
         height > width ? 'p' : 'l', 'pt', [width, height]);
         // Workaround for #7090, hidden elements were drawn anyway. It comes
         // down to https://github.com/yWorks/svg2pdf.js/issues/28. Check this
@@ -175087,19 +173135,21 @@ var OfflineExporting;
                 tspan.setAttribute('dx', -5);
             }
         });
-        pdfDoc.svg(svgElement, {
+        // Transform from PDF to SVG
+        await pdfDoc.svg(svgElement, {
             x: 0,
             y: 0,
             width,
             height,
             removeInvalid: true
-        }).then(() => callback(pdfDoc.output('datauristring')));
+        });
+        // Return the output
+        return pdfDoc.output('datauristring');
     }
-    OfflineExporting.svgToPdf = svgToPdf;
 })(OfflineExporting || (OfflineExporting = {}));
 /* *
  *
- * Default Export
+ *  Default Export
  *
  * */
 /* harmony default export */ const OfflineExporting_OfflineExporting = (OfflineExporting);
@@ -175116,7 +173166,7 @@ G.dataURLtoBlob = G.dataURLtoBlob || Extensions_DownloadURL.dataURLtoBlob;
 G.downloadSVGLocal = OfflineExporting_OfflineExporting.downloadSVGLocal;
 G.downloadURL = G.downloadURL || Extensions_DownloadURL.downloadURL;
 // Compose
-OfflineExporting_OfflineExporting.compose(G.Chart);
+OfflineExporting_OfflineExporting.compose(G.Exporting);
 /* harmony default export */ const offline_exporting_src = ((highcharts_commonjs_highcharts_commonjs2_highcharts_root_Highcharts_default()));
 
 __webpack_exports__ = __webpack_exports__["default"];
@@ -200096,7 +198146,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
     //clone( elem ) return a cloned copy of elem
     function clone(elem){
         var result;
-        if ($.isArray(elem)){
+        if (Array.isArray(elem)){
             result = [];
             $.each(elem, function(index, subElem){
                 result.push( clone(subElem) );
@@ -200157,7 +198207,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         nextLiId = 0;
 
     $.BsMmenuItem = function(options, parent, owner){
-        var _this = this;
+
         owner = owner || this;
         this.options = options;
 
@@ -200189,6 +198239,12 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         this.parent = parent;
         this.menu = parent.menu;
 
+        //Use forced events if given
+        if (options.onChange && this.menu.options.forceOnChange)
+            options.onChange = this.menu.options.forceOnChange;
+        if (options.onClick && this.menu.options.forceOnClick)
+            options.onClick = this.menu.options.forceOnClick;
+
         //Using global events (if any) if non is given
         if (!options.onChange && !options.onClick){
             options.onChange = this.menu.options.onChange || null;
@@ -200204,10 +198260,13 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                 this.state = 'semi';
         }
 
+        options.getState = options.getState || this.menu.options.getState || null;
+
         //Set element ids
         nextLiId++;
-        this.liId = 'bsmm_li_'+nextLiId;
-        this.ulId = 'bsmm_ul_'+nextLiId;
+        this.liId       = 'bsmm_li_'+nextLiId;
+        this.checkboxId = 'bsmm_cb_'+nextLiId;
+        this.ulId       = 'bsmm_ul_'+nextLiId;
 
         //Create the DOM-element
         this.createLi(owner);
@@ -200220,9 +198279,8 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         var list = this.options.list || this.options.items || this.options.itemList || [];
         if (list.length)
             this._createUl();
-        $.each(list, function(index, opt){
-            _this.append($.bsMmenuItem(opt, _this));
-        });
+
+        list.forEach( opt => this.append($.bsMmenuItem(opt, this)), this );
     };
 
     $.bsMmenuItem = function(options, parent, owner){
@@ -200263,6 +198321,8 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                         .i18n(this.options.link, 'href')
                         .prop('target', '_blank');
 
+                if (this.options.simpleFullWidth)
+                    this.$content.addClass('simple-full-width');
 
                 var originalContent = this.options.content || this.options,
                     adjustIcon = this.menu.options.adjustIcon;
@@ -200270,11 +198330,16 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                 if (originalContent && originalContent.icon && adjustIcon)
                     originalContent.icon = adjustIcon(originalContent.icon);
 
+                let onClick = owner._onClick.bind(owner);
+
                 content = clone(originalContent);
-                content = $.isArray(content) ? content : [content];
+                content = Array.isArray(content) ? content : [content];
 
                 //If first content-item is the text => make it full-width inside a div. Adjust the icon if menu.options.adjustIcon = function(icon) is given
                 var firstContent = content[0];
+
+                if (firstContent.onClick)
+                    firstContent.onClick = onClick;
 
                 if ( $.isPlainObject(firstContent) && (!firstContent.type || (firstContent.type == 'text')) )
                     content[0] = $('<div/>')._bsAddHtml(firstContent);
@@ -200291,13 +198356,13 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                 }
                 else {
                     this.checkbox = $.bsCheckbox({
-                        id          : this.id,
+                        id          : this.checkboxId,
                         type        : this.type,
                         multiLines  : true,
                         icon        : this.options.icon,
                         text        : this.options.text,
                         content     : content,
-                        onClick     : $.proxy(owner._onClick, owner)
+                        onClick     : onClick
                     })
                     .appendTo( this.$content );
 
@@ -200325,7 +198390,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                                 noBorder    : true,
                                 class       :'flex-shrink-0 mm-favorite-icons',
                                 selected    : inFavorites,
-                                onChange    : $.proxy(this._toggleFavorite, this)
+                                onChange    : this._toggleFavorite.bind(this)
                             }).appendTo(this.$outer);
 
                         this.$outer.addClass('pe-0');
@@ -200344,7 +198409,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                             square      : true,
                             noBorder    : true,
                             class       :'flex-shrink-0 mm-favorite-icons',
-                            onClick     : $.proxy(owner._toggleFavorite, owner)
+                            onClick     : owner._toggleFavorite.bind(owner)
                         }).appendTo(this.$outer);
                         this.$outer.addClass('pe-0');
                     }
@@ -200362,11 +198427,11 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
             if (this.$favoriteButton || this.options.removeFavoriteButton || this.buttonPaddingRight)
                 paddingClass = paddingClass + ' padding-right';
 
-            if (buttonList){
+            if (buttonList && !this.menu.options.noButtons){
                 //Buttons added inside button-bar. If button-options have first: true => new 'line' = new bsButtonGroup
                 var currentList = [];
 
-                buttonList.forEach( function(buttonOptions){
+                buttonList.forEach( buttonOptions => {
                     if (buttonOptions.isFirstButton && currentList.length){
                         groupList.push( currentList );
                         currentList = [];
@@ -200381,6 +198446,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                 });
                 if (currentList.length)
                     groupList.push( currentList );
+
 
                 groupList.forEach( function( list ){
                     $.bsButtonBar({
@@ -200564,7 +198630,6 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         Insert this.$li in DOM
         ***********************************/
         _updateElement: function(){
-
             this.parent._createUl();
 
             if (this.$li){
@@ -200582,7 +198647,6 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                     this._getApi().initPanel( this.menu.panel );
                 }
             }
-
             this.menu._updateFavorites();
 
             return this;
@@ -200653,20 +198717,104 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
             this.menu._updateFavorites();
         },
 
+
+        /***********************************
+        _getChildIndex
+        Get the index of childItem
+        ***********************************/
+        _getChildIndex: function( childItem ){
+            let index = 0,
+                nextItem = this.first;
+            while (nextItem){
+                if (nextItem === childItem)
+                    return index;
+                else {
+                    nextItem = nextItem.next;
+                    index++;
+                }
+            }
+            return -1;
+        },
+
+        /***********************************
+        _getPlacement
+        Return a array with the index of this in it parents for this and all is parent elements
+        ***********************************/
+        _getPlacement: function(){
+            let getChildIndex = function( childItem, placement = [] ){
+                let parent = childItem.parent;
+                if (parent){
+                    let index = 0,
+                        nextItem = parent.last;
+                    while (nextItem){
+                        if (nextItem === childItem){
+                            placement.push(index);
+                            return getChildIndex( parent, placement );
+                        }
+                        else {
+                            nextItem = nextItem.prev;
+                            index++;
+                        }
+                    }
+                }
+                return placement;
+            };
+
+            return getChildIndex( this );
+        },
+
+
+        /***********************************
+        getSiblingItem( menu )
+        Returns the equal item in a cloned or original menu
+        ***********************************/
+        getSiblingItem: function( menu ){
+            return menu._getItemByPlacment( this._getPlacement() );
+        },
+
         /***********************************
         open
         ***********************************/
         open: function(closeAllOther){
             if (closeAllOther)
                 this.menu.closeAll();
+
             if (this.$ul)
                 this._getApi().openPanel(this.$ul.get(0));
+
+            //For unknown reasons this is also needed.....
+            if (this.$li && this.$ul){
+                this.$li.addClass('mm-listitem_opened');
+                this.$ul.parent().removeClass('mm-hidden');
+            }
+
         },
 
+        /***********************************
+        close
+        ***********************************/
+        close: function(){
+            if (this.$ul)
+                this._getApi().closePanel(this.$ul.get(0));
+
+            //For unknown reasons this is also needed.....
+            if (this.$li && this.$ul){
+                this.$li.removeClass('mm-listitem_opened');
+                this.$ul.parent().addClass('mm-hidden');
+            }
+        },
         /***********************************
         _onClick
         ***********************************/
         _onClick: function(/*id, state*/){
+            //If the menu is a full clone => use the original menu to handle events
+            if (this.menu.cloneOf && this.menu.options.isFullClone){
+                let siblingItem = this.getSiblingItem( this.menu.cloneOf );
+                if (siblingItem)
+                    siblingItem._onClick.bind(siblingItem).apply(arguments);
+                return;
+            }
+
             //There are two ways to change the state:
             //options.onChange => simple true/false state
             //options.onClick(id, state, item) => onClick will do all setting
@@ -200677,7 +198825,6 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
             else
                 if (this.options.onClick)
                     this.options.onClick(this.id, this.state, this);
-
         },
 
         /***********************************
@@ -200712,15 +198859,27 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         setState
         ***********************************/
         setState: function(state, callOnChange){
-            this.state = state;
+            this.state = this.options.getState ? this.options.getState(this, state) : state;
             if (this.checkbox)
-                this.checkbox.cbxSetState(state);
+                this.checkbox.cbxSetState(this.state);
 
             if (this.favoriteCheckbox)
-                this.favoriteCheckbox.cbxSetState(state);
+                this.favoriteCheckbox.cbxSetState(this.state);
 
             if (callOnChange && this.options.onChange)
                 this.options.onChange(this.id, this.state, this);
+
+            //If the menu has any cloned menus => update the items
+            if (this.menu.clones){
+                let state = this.state;
+                $.each(this.menu.clones, function(id, menu){
+                    let menuItem = this.getSiblingItem( menu );
+                    if (menuItem && menuItem.setState)
+                        menuItem.setState( state, false );
+                }.bind(this));
+            }
+
+
 
             return this;
         },
@@ -200751,7 +198910,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
             //(*)slidingSubmenus: false,   //Whether or not submenus should come sliding in from the right.
                                            //If false, submenus expand below their parent. To expand a single submenu below its parent item, add the class "Vertical" to it.
 
-            offCanvas      : true,   //https://mmenujs.com/docs/core/off-canvas.html
+            offCanvas      : false, //https://mmenujs.com/docs/core/off-canvas.html
 
             preventDefault : true,
             extensions: [
@@ -200777,7 +198936,8 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
 
             //Events
             onOpenOrClose: null, //function(menuItem, open, menu)
-
+            forceOnChange: null, //function(menuItem, state, menu) Overwrites any onChange given. Normally used in cloned menues
+            forceOnClick : null, //function(menuItem, state, menu) Overwrites any onClick given. Normally used in cloned menues
             /*
             navbar - see https://mmenujs.com/docs/addons/navbars.html
             */
@@ -200808,6 +198968,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         }
     };
 
+
     /************************************************
     BsMmenu
     options = {
@@ -200818,6 +198979,8 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         }
         inclBar    : BOOLEAN, if true a bar top-right with buttons from items with options.addToBar = true and favorites (optional) and close-all (if barCloseAll=true) and reset (if options.reset is given)
         barCloseAll: BOOLEAN, if true a top-bar button is added that closes all open submenus
+
+        noButtons   : BOOLEAN, if true no buttons are added to menu-items
 
         adjustIcon  : function(icon): retur icon (optional). Adjust the icon of each menu-items
 
@@ -200832,8 +198995,6 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
 
     ************************************************/
     $.BsMmenu = function(options = {}, mmenuOptions = {}, configuration = {}){
-        var _this = this;
-
         this.prev = null;
         this.next = null;
         this.first = null;
@@ -200843,6 +199004,12 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         this.removeFavoriteIcon = [[$.FONTAWESOME_PREFIX_STANDARD + ' fa-star fa-fw', $.FONTAWESOME_STANDARD + " fa-slash fa-fw"]];
 
         this.ulId = 'bsmm_ul_0';
+
+        this.options = options;
+
+        //Save mmenuOptions and configuration in options. Needed for clone
+        this.options.mmenuOptions = mmenuOptions;
+        this.options.configuration = configuration;
 
         //Setting and adjusting mmenuOptions = the options for Mmenu
         //Using sliding submenus and navbar with title if it is a touch device
@@ -200854,7 +199021,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                     add   : !!window.bsIsTouch || !!options.title,
                     title : options.title || ' ',
                 },
-/* mangler
+/* @todo
                 backButton: {
                     // back button options
                 }
@@ -200906,23 +199073,23 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         }
 
         //Create and add sub-items
-        var list = $.isArray(options) ? options : (options.list || options.items || options.itemList || []);
-        $.each(list, function(index, opt){
-           _this.append($.bsMmenuItem(opt, _this));
-        });
+        var list = Array.isArray(options) ? options : (options.list || options.items || options.itemList || []);
+        list.forEach( opt => this.append($.bsMmenuItem(opt, this)), this );
+
+        this.list = list;
 
     };
 
 
-    $.bsMmenu = function(options, mmenuOptions){
-        return new $.BsMmenu(options, mmenuOptions);
+    $.bsMmenu = function(options, mmenuOptions, configuration){
+        return new $.BsMmenu(options, mmenuOptions, configuration);
     };
 
     //bsMMenu as jQuery prototype
-    $.fn.bsMmenu = function(options, mmenuOptions){
+    $.fn.bsMmenu = function(options, mmenuOptions, configuration){
         return this.each(function() {
             if (!$.data(this, "bsMmenu"))
-                new $.BsMmenu(options, mmenuOptions);
+                new $.BsMmenu(options, mmenuOptions, configuration);
             $.data(this, "bsMmenu").create($(this));
         });
     };
@@ -200959,7 +199126,10 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
             this._createUl();
             this.$ul.appendTo($elem);
 
-            $elem.addClass( $._bsGetSizeClass({baseClass: 'mm-menu', useTouchSize: true}) );
+            $elem
+                .addClass( $._bsGetSizeClass({baseClass: 'mm-menu', useTouchSize: true}) )
+                .toggleClass('mm-menu-no-button', !!this.options.noButtons);
+
 
             if (this.options.inclBar){
                 buttonList = [];
@@ -200969,7 +199139,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                         title: {da:'Luk alle', en:'Close all'},
                         square : true,
                         tagName: 'div',
-                        onClick: $.proxy(this.closeAll, this)}
+                        onClick: this.closeAll.bind(this)}
                     ).get(0) );
 
                 var item = this.first;
@@ -200981,7 +199151,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                                 title   : item.options.text || null,
                                 square  : true,
                                 tagName : 'div',
-                                onClick : $.proxy(item.open, item, true)
+                                onClick : item.open.bind(item, true)
                             }).get(0)
                         );
                     item = item.next;
@@ -200994,7 +199164,8 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                         //bottom: []ELEMENT
                     };
             }
-
+            else
+                this.mmenuOptions.iconbar = false;
 
             //Add button to reset all selected menu-items (if any)
             if (this.options.reset){
@@ -201016,7 +199187,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                         title   : resetOptions.title,
                         square  : true,
                         tagName : 'div',
-                        onClick : $.proxy(this.reset, this)
+                        onClick : this.reset.bind(this)
                     }).get(0)
                 );
             }
@@ -201027,15 +199198,40 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
             this.panel = $elem.find('#'+this.ulId).get(0);
             this.api = this.mmenu.API;
 
-
-
             //Add event for open/close menus. Other events: 'closePanel:before', 'closePanel:after', 'openPanel:before', 'openPanel:after', 'setSelected:before', 'setSelected:after'
-            this.api.bind('openPanel:after',  this._onOpen.bind(this) );                
-            this.api.bind('closePanel:after', this._onClose.bind(this) );                
-            
+            this.api.bind('openPanel:after',  this._onOpen.bind(this) );
+            this.api.bind('closePanel:after', this._onClose.bind(this) );
+
             $elem.data('bsMmenu', this.mmenu);
 
+
+            this.setOpenAndClosedItems();
+
             return this;
+        },
+
+        /**********************************
+        setOpenAndClosedItems
+        Open/close items according to the setting in this.openItemIdList
+        **********************************/
+        setOpenAndClosedItems: function(){
+            this.openItemIdList = this.openItemIdList || {};
+
+            let save_openItemIdList = $.extend({}, this.openItemIdList);
+            $.each(this.openItemIdList, function(id, isOpen){
+                let item = this.getItem(id);
+                if (item && isOpen)
+                    item.open();
+            }.bind(this));
+
+            //Need to re-close other items
+            this.openItemIdList = save_openItemIdList;
+
+            this.visitAllItems( function(menuItem){
+                if (!this.openItemIdList || !this.openItemIdList[menuItem.id])
+                    menuItem.close();
+            }.bind(this));
+
         },
 
         /**********************************
@@ -201056,6 +199252,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
                 else
                     item = item.next;
             }
+
             return result;
         },
 
@@ -201064,6 +199261,48 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         **********************************/
         getItem: function(id, findByLiId){
             return this._getItem(id, this, findByLiId);
+        },
+
+        /**********************************
+        _getItemByPlacment
+        **********************************/
+        _getItemByPlacment( placement ){
+            let getChildByIndex = function( parent, placement ){
+                if (!placement.length || !parent)
+                    return parent;
+
+                let nextIndex = placement.pop(),
+                    index = 0,
+                    nextItem = parent.last;
+                while (nextItem){
+                    if (index == nextIndex)
+                        return getChildByIndex( nextItem, placement );
+                    else {
+                        nextItem = nextItem.prev;
+                        index++;
+                    }
+                }
+                return null;
+            };
+
+            return getChildByIndex( this, placement );
+        },
+
+        /**********************************
+        visitAllItems
+        func = function(menuItem)
+        **********************************/
+        visitAllItems: function( func ){
+            function visitAll( menuItem ){
+                let nextChild = menuItem.first;
+                while (nextChild){
+                    func(nextChild);
+                    visitAll(nextChild);
+                    nextChild = nextChild.next;
+                }
+            }
+            visitAll( this );
+
         },
 
         /**********************************
@@ -201081,7 +199320,7 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         **********************************/
         reset: function(){
             if (this.options.reset.promise)
-                this.options.reset.promise( $.proxy(this._reset_resolve, this) );
+                this.options.reset.promise( this._reset_resolve.bind(this) );
         },
 
         _reset_resolve: function( closeAll ){
@@ -201104,21 +199343,21 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
         _onClose: function(panel){ return this._onOpenOrClose(panel, false); },
 
         _onOpenOrClose( panel, isOpen=false){
-            let liId      = panel.parentElement ? $(panel.parentElement).attr('id') : null,
-                mmenuItem = liId ? this.getItem(liId, true) : null;
+            let liId     = panel.parentElement ? $(panel.parentElement).attr('id') : null,
+                menuItem = liId ? this.getItem(liId, true) : null;
 
-            if (mmenuItem){
+            if (menuItem){
                 //Update openItemIdList
                 this.openItemIdList = this.openItemIdList || {};
-                this.openItemIdList[mmenuItem.id] = isOpen;
+                this.openItemIdList[menuItem.id] = isOpen;
 
                 if (this.options.onOpenOrClose)
-                    this.options.onOpenOrClose(mmenuItem, isOpen, this);
+                    this.options.onOpenOrClose(menuItem, isOpen, this);
             }
 
-            return this;            
-        },            
-        
+            return this;
+        },
+
         /**********************************
         closeAll
         **********************************/
@@ -201185,7 +199424,198 @@ S.addons={offcanvas:function(){var e=this;if(this.opts.offCanvas){var t=function
 
                 });
             }
+        },
+
+        /**********************************
+        clone
+        Create a cloned version of the menu
+        ***********************************/
+        clone: function( options = {}, mmenuOptions = {}, configuration = {}  ){
+
+            options = $.extend({
+                inclFavorites: false,
+                noButtons    : true,
+                inclBar      : false,
+                reset        : false,
+                favorites    : false,
+                isFullClone  : true     //true => All items are an exact copy
+            }, options);
+
+            let c_options       = $.extend(true, {}, this.options,               options      ),
+                c_mmenuOptions  = $.extend(true, {}, this.options.mmenuOptions,  mmenuOptions ),
+                c_configuration = $.extend(true, {}, this.options.configuration, configuration);
+
+            let c_menu = $.bsMmenu(c_options, c_mmenuOptions, c_configuration);
+
+            this.nrOfClones = this.nrOfClones || 0;
+            this.clones = this.clones || {};
+
+            c_menu.cId = 'clone'+this.nrOfClones;
+            c_menu.cloneOf = this;
+            this.nrOfClones++;
+            this.clones[c_menu.cId] = c_menu;
+
+            //Copy the open/close state from the original menu
+            c_menu.openItemIdList = {};
+            $.each(this.openItemIdList, function(id, isOpen){
+                let origialItem = this.getItem(id),
+                    cloneItem = origialItem ? origialItem.getSiblingItem( c_menu ) : null;
+                if (cloneItem)
+                    c_menu.openItemIdList[cloneItem.id] = isOpen;
+            }.bind(this));
+
+            return c_menu;
+        },
+
+        /**********************************
+        destroy
+        Destroy the menu and clean up
+        ***********************************/
+        destroy: function(){
+            if (this.cloneOf)
+                delete this.cloneOf.clones[this.cId];
+            $(this.mmenu.node.menu).empty();
+        },
+
+        /**********************************
+        showInModal
+        Show the menu in a modal
+        ***********************************/
+        showInModal: function(modalOptions = {}, destroyOnClose){
+
+            let width = null;
+
+            //If the menu is a clone and modalOptions.sameWidthAsCloneOf = true => the modal inner-wisth gets the same as the original menu
+            if (this.cloneOf && modalOptions.sameWidthAsCloneOf && !modalOptions.width)
+                width = this.cloneOf.$ul.width();
+            else
+                width = modalOptions.width;
+
+            let offCanvas = this.mmenuOptions.offCanvas;
+            this.mmenuOptions.offCanvas = false;
+
+            if (destroyOnClose){
+                modalOptions.show   = false;
+                modalOptions.remove = true;
+            }
+
+            this.bsModal = $.bsModal(
+                $.extend( modalOptions, {
+                    scroll   : true,
+                    fitWidth : !!width,
+                    flexWidth: !width,
+
+                    content: function(modalOptions, $container){
+                        let $outerContent =
+                                $('<div></div>')
+                                    .addClass('mm-menu-modal-content')
+                                    .appendTo($container);
+
+                        if (modalOptions.minHeight)
+                            $outerContent.css('minHeight', modalOptions.minHeight);
+
+                        if (width)
+                            $outerContent.width(width);
+
+                        let $content = $('<div></div>')
+                                .appendTo($outerContent);
+
+                        this.create($content);
+                    }.bind(this, modalOptions),
+                })
+            );
+
+            this.mmenuOptions.offCanvas = offCanvas;
+
+            if (destroyOnClose)
+                //Destroy the cloned menu on close + show it!
+                this.bsModal
+                    .on('hidden.bs.modal', this.destroy.bind(this) )
+                    .show();
+        },
+
+        /**********************************
+        asSimpleMenu
+        Special method to return the menu as a new simple bsMenu
+        The returned menu do not only contain any pure text or buttons or checkbox/radio
+        Instead eaach menu-item is just a click-item calling onClick
+        Optional: include(menuItem) return true/false
+        Optional: adjust(menuItem) return menuItem adjusted (icon, text etc)
+        ***********************************/
+        asSimpleMenu: function(
+            onClick = (/*menuItem*/) => {/* Do sometning with item*/},
+            include = (  menuItem  ) => {return !!menuItem.onClick || !!menuItem.onChange;},
+            adjust  = (  menuItem  ) => {return menuItem; }){
+
+
+            let onClickSimple = function(id, state, menuItem){
+                onClick(menuItem);
+            };
+
+
+            let getIcon = function( opt ){
+                let icon = opt.icon;
+                if (icon && this.options.adjustIcon)
+                    icon = this.options.adjustIcon(icon);
+                return icon;
+            }.bind(this);
+
+
+            let getSimpleOptions = function( menuList = []){
+                let result = [];
+
+                menuList.forEach( menuItem => {
+                    menuItem = adjust(menuItem);
+
+                    let simpleOptions = null;
+                    let list = getSimpleOptions( menuItem.list);
+
+                    if (list.length)
+                        simpleOptions = {
+                            id  : menuItem.id,
+                            icon: getIcon(menuItem),
+                            text: menuItem.text,
+                            list: list
+                        };
+                    else
+                        //Menu-item has no children => Add it if it is included (default = has a onClick/onChange )
+                        if (include(menuItem))
+                            simpleOptions = {
+                                id      : menuItem.id,
+                                icon    : getIcon(menuItem),
+                                text    : menuItem.text || {da:'Mangler', en:'Missing'},
+                                onClick : onClickSimple,
+                                simpleFullWidth: true
+                            };
+
+                    if (simpleOptions)
+                        result.push( simpleOptions );
+                }, this);
+
+                return result;
+
+            }.bind(this);
+
+
+            let bsMenu = $.bsMmenu(
+                    {list: getSimpleOptions( this.list ) },
+                    this.options.mmenuOptions,
+                    this.options.configuration
+                );
+
+            //Copy the open/close state from the original menu
+            bsMenu.openItemIdList = {};
+            $.each(this.openItemIdList, function(id, isOpen){
+                let origialItem = this.getItem(id),
+                    cloneItem = origialItem ? origialItem.getSiblingItem( bsMenu ) : null;
+                if (cloneItem)
+                    bsMenu.openItemIdList[cloneItem.id] = isOpen;
+            }.bind(this));
+
+            return bsMenu;
+
         }
+
     };
 
     /******************************************
@@ -204288,7 +202718,7 @@ Methods to create standard FCC-web-applications
 
 
 ****************************************************************************/
-(function ($, moment, window/*, document, undefined*/) {
+(function ($, moment, window, document, undefined) {
     "use strict";
 
     var ns = window.fcoo = window.fcoo || {};
@@ -204306,14 +202736,27 @@ Methods to create standard FCC-web-applications
 
     createApplication(...) will
         1: "Load" (*) setup and proccess the options
-        2: "Load" standard setup/options for differnet parts of the application
-        3: "Load" content for left- and/or right-menu
+        2: "Load" standard setup/options for different parts of the application
+        3: "Load" content for left- and/or right-panel
         4: "Load" standard FCOO-menu
-        5: Create the main structure and the left and/or right menu
+        5: Create the main structure and the left and/or right panel
         6: "Load" options.other and options.metaData (if any)
         7: Load settings in fcoo.appSetting and globalSetting and call options.finally (if any)
 
     *) "Load" can be loading from a file or using given or default options
+
+
+    Regarding loading and creation of menu-structure in left or right panel (#3 and #4):
+    There are three way to set a menu structure (see fcoo-application-standard-menu.js):
+    1: Set a list = MENU_ITEM_LIST or {list: MENU_ITEM_LIST}
+    2: Set name of a file containing the menu-structure
+    3: Mark to use the default FCOO-menu
+
+    A menu-item can initial just be at id (STRING) and other code-packages can add functions to create the content of the menu-item
+    The application must provide a "owner-list" = {MENU_ID: function(options, addMenu)}, where addMenu = function to add new (sub-)menu-items
+
+
+
 
     ****************************************************************************/
 
@@ -204351,10 +202794,32 @@ Methods to create standard FCC-web-applications
     }
 
     /*************************************************************************
+    __FCOO_APPLICATION_ADJUT_OPTIONS
+    Convert options from previous version to current version
+    *************************************************************************/
+    ns.__FCOO_APPLICATION_ADJUT_OPTIONS = function(options){
+        ['leftMenu', 'leftMenuIcon', 'leftMenuButtons', 'keepLeftMenuButton', 'rightMenu', 'rightMenuIcon', 'keepRightMenuButton', 'rightMenuButtons', 'topMenu', 'bottomMenu'].forEach( id => {
+            let newId = id.replace('Menu', 'Panel');
+
+            if ((options[newId] === undefined) && (options[id] !== undefined)){
+                options[newId] =options[id];
+                delete options[id];
+            }
+        });
+    };
+
+
+    /*************************************************************************
     createApplication(
         options,
         create_main_content
-        menuOptions = {ownerList, finallyFunc, fileNameOrMenuOptions}
+        menuOptions = {
+            fileName             : FILENAME,
+            menuList or list     : MENU_ITEM_LIST
+            ownerList            : OWNER_LIST
+            finallyFunc          : FUNCTION,
+            fileNameOrMenuOptions: FILENAME or MENU_ITEM_LIST
+        }
         application_resolve_setup,
         nsForApplication = ns,
     }
@@ -204371,6 +202836,7 @@ Methods to create standard FCC-web-applications
         application_resolve_setup,
         nsForApplication = ns
     ){
+
         //Set namespace for the application
         nsApp = nsForApplication || nsApp;
 
@@ -204384,7 +202850,7 @@ Methods to create standard FCC-web-applications
         ns.viewport_no_scalable = true;
 
         //1: "Load" setup and proccess the options
-        nsApp.menuOptions = menuOptions;
+        nsApp.menuOptions = ns.adjustMenuOptions(menuOptions);
 
         var promiseOptions = ns.options2promiseOptions(options);
         if (promiseOptions.fileName)
@@ -204399,59 +202865,71 @@ Methods to create standard FCC-web-applications
     ******************************************************************/
     function resolve_setup(options){
 
+        //For backward compatibility a number of ids are converted
+        ns.__FCOO_APPLICATION_ADJUT_OPTIONS(options);
+
         //Set applicationHeader here because it is used in promise-error
         ns.applicationHeader = $._bsAdjustText( options.applicationName || options.applicationHeader || options.header || ns.defaultApplicationOptions.applicationName );
 
         //Adjust options - both in ns and nsApp
         ns.setupOptions = nsApp.setupOptions = options = setOptions(options, ns.defaultApplicationOptions);
 
-        //Set bottom-menu options
-        nsApp.setupOptions.bottomMenu = nsApp.setupOptions.bottomMenu || nsApp.BOTTOM_MENU;
+        //Set bottom-panel options
+        nsApp.setupOptions.bottomPanel = nsApp.setupOptions.bottomPanel || nsApp.BOTTOM_PANEL || nsApp.BOTTOM_MENU;
 
         //Adjust path: If path is file-name (in any form) => move it into default format
         ['help', 'messages', 'warning'].forEach(id => {
-            let topMenuPath = options.topMenu[id];
-            if (topMenuPath && window.intervals.isFileName(topMenuPath))
-                options.topMenu[id] = {url: ns.dataFilePath( topMenuPath )};
+            let topPanelPath = options.topPanel[id];
+            if (topPanelPath && window.intervals.isFileName(topPanelPath))
+                options.topPanel[id] = {url: ns.dataFilePath( topPanelPath )};
         });
 
         //Add helpId to modal for globalSetting (if any)
-        if (nsApp.setupOptions.topMenu && nsApp.setupOptions.topMenu.helpId && nsApp.setupOptions.topMenu.helpId.globalSetting){
+        if (nsApp.setupOptions.topPanel && nsApp.setupOptions.topPanel.helpId && nsApp.setupOptions.topPanel.helpId.globalSetting){
             var modalOptions = ns.globalSetting.options.modalOptions = ns.globalSetting.options.modalOptions || {};
-            modalOptions.helpId = nsApp.setupOptions.topMenu.helpId.globalSetting;
+            modalOptions.helpId = nsApp.setupOptions.topPanel.helpId.globalSetting;
             modalOptions.helpButton = true;
         }
 
         //Adjust and add options for load, save, and share button
         let addTo = ns.setupOptions.saveLoadShare || '', buttons;
         addTo = Array.isArray(addTo) ? addTo : addTo.split(' ');
+
+        //Convert "Menu" to "Panel"
+        addTo = addTo.join(' ').replace('Menu', 'Panel').split(' ');
+
+        ['leftPanel', 'rightPanel', 'topPanel'].forEach( id => {
+            if (options[id] === true)
+                options[id] = {};
+        });
+
         addTo.forEach( where => {
             switch (where.toUpperCase()){
-                case 'TOPMENU'  :
-                    options.topMenu = options.topMenu || {};
-                    options.topMenu.save  = options.topMenu.save  || true;
-                    options.topMenu.load  = options.topMenu.load  || true;
-                    options.topMenu.share = options.topMenu.share || true;
+                case 'TOPPANEL'  :
+                    options.topPanel.save  = options.topPanel.save  || true;
+                    options.topPanel.load  = options.topPanel.load  || true;
+                    options.topPanel.share = options.topPanel.share || true;
                     break;
 
-                case 'LEFTMENU' :
-                    options.leftMenu = options.leftMenu || {};
-                    buttons = options.leftMenu.buttons = options.leftMenu.buttons || {};
-                    buttons.save  = buttons.save  || true;
-                    buttons.load  = buttons.load  || true;
-                    buttons.share = buttons.share || true;
+                case 'LEFTPANEL' :
+                    if (options.leftPanel){
+                        buttons = options.leftPanel.buttons = options.leftPanel.buttons || {};
+                        buttons.save  = buttons.save  || true;
+                        buttons.load  = buttons.load  || true;
+                        buttons.share = buttons.share || true;
+                    }
                     break;
 
-                case 'RIGHTMENU':
-                    options.rightMenu = options.righttMenu || {};
-                    buttons = options.rightMenu.buttons = options.rightMenu.buttons || {};
-                    buttons.save  = buttons.save  || true;
-                    buttons.load  = buttons.load  || true;
-                    buttons.share = buttons.share || true;
+                case 'RIGHTPANEL':
+                    if (options.rightPanel){
+                        buttons = options.rightPanel.buttons = options.rightPanel.buttons || {};
+                        buttons.save  = buttons.save  || true;
+                        buttons.load  = buttons.load  || true;
+                        buttons.share = buttons.share || true;
+                    }
                     break;
             }
         });
-
 
         //Call the applications own resolve method (if any)
         if (appResolveSetup)
@@ -204463,60 +202941,77 @@ Methods to create standard FCC-web-applications
                 ns.promiseList.append( ns.options2promiseOptions(fileNameOrData, nsApp.standard[id]) );
         });
 
-        //3: "Load" content for left- and/or right-menu. If the menu isn't the standard-menu its content is loaded last to have the $-container ready
+        //3: "Load" content for left- and/or right-panel. If the panel is a menu or the standard-menu its content is loaded last to have the $-container ready
+        let menuOptions = $.extend({}, nsApp.menuOptions || {}, options.menuOptions || {});
+
         ['left', 'right'].forEach(prefix => {
-            var menuId = prefix+'Menu',
-                sideMenuOptions = options[menuId];
-            if (!sideMenuOptions) return;
+            var panelId = prefix+'Panel',
+                sidePanelOptions = options[panelId];
+            if (!sidePanelOptions) return;
 
-            if (sideMenuOptions.isStandardMenu){
-                //Set the options for mmenu
-                sideMenuOptions.menuOptions =
-                    $.extend({}, sideMenuOptions.bsMenuOptions || {}, options.standardMenuOptions || {}, {list: []});
+            //1: The panel contains a menu
+            if (sidePanelOptions.isStandardMenu || (menuOptions && sidePanelOptions.isMenu) || sidePanelOptions.menuOptions){
 
-                //Set ref to the menu with the standard menu
-                options.standardMenuId = prefix+'Menu';
+                //sidePanelOptions.menuOptions can just be a file-name with menu-items
+                if (sidePanelOptions.menuOptions && window.intervals.isFileName(sidePanelOptions.menuOptions))
+                    sidePanelOptions.menuOptions = {fileName: sidePanelOptions.menuOptions};
+
+                //Set the options for menu
+                menuOptions = sidePanelOptions.menuOptions =
+                    $.extend({},
+                        sidePanelOptions.isStandardMenu ? options.standardMenuOptions : {} || {},
+                        menuOptions || {},
+                        sidePanelOptions.menuOptions || {}
+                    );
+
+                //Set ref to the panel with the standard menu
+                options.menuPanelId = prefix+'Panel';
             }
             else
-                if (!sideMenuOptions.$menu){
-                    /*  sideMenuOptions contains:
+                //2: Content is given in $panel or $content
+                if (sidePanelOptions.$panel || sidePanelOptions.$content)
+                    sidePanelOptions.$panel = sidePanelOptions.$panel || sidePanelOptions.$content;
+                else {
+                    /*
+                    3: sidePanelOptions contains:
                           fileName: FILENAME, or
                           data    : JSON-OBJECT, or
                           content : A JSON-OBJECT with content as in fcoo/jquery-bootstrap, or
-                          create or resolve : function( data, $container ) - function to create the menus content in $container. Only if fileName or data is given
-
-                        Create the resolve-function */
-                    var resolve, menuResolve;
-                    if (sideMenuOptions.content)
+                          create or resolve : function( data, $container ) - function to create the content of the panel in $container. Only if fileName or data is given
+                        Create the resolve-function
+                    */
+                    var resolve, panelResolve;
+                    if (sidePanelOptions.content)
                         resolve = function( content ){
-                            nsApp.main[menuId].$menu._bsAddHtml( content );
+                            nsApp.main[panelId].$panel._bsAddHtml( content );
                         };
                     else {
-                        menuResolve = sideMenuOptions.resolve || sideMenuOptions.create;
-                        if (menuResolve)
+                        panelResolve = sidePanelOptions.resolve || sidePanelOptions.create;
+                        if (panelResolve)
                             resolve = function( data ){
-                                menuResolve( data, nsApp.main[menuId].$menu );
+                                panelResolve( data, nsApp.main[panelId].$panel );
                             };
                     }
 
-                    if (menuResolve)
+                    if (panelResolve)
                         ns.promiseList.appendLast({
-                            fileName: sideMenuOptions.fileName,
-                            data    : sideMenuOptions.data || sideMenuOptions.content,
+                            fileName: sidePanelOptions.fileName,
+                            data    : sidePanelOptions.data || sidePanelOptions.content,
                             resolve : resolve
                         });
                 }
         });
 
-        //4: "Load" standard FCOO-menu - when the menu is loaded
-        if (nsApp.menuOptions){
-            nsApp.menuOptions.appFinallyFunc = nsApp.menuOptions.finallyFunc;
-            nsApp.menuOptions.finallyFunc = standardMenuFinally;
 
+        //4: "Load" menu (standard or individuel) - when the menu is loaded
+        if (menuOptions){
+            nsApp.menuOptions = menuOptions;
+            nsApp.menuOptions.appFinallyFunc = nsApp.menuOptions.finallyFunc;
+            nsApp.menuOptions.finallyFunc = appMenuFinally;
             ns.createFCOOMenu(nsApp.menuOptions);
         }
 
-        //5: Create the main structure and the left and/or right menu. Is excecuded after the layer-menus and before lft/rigth menu creation
+        //5: Create the main structure and the left and/or right panel. Is excecuded after the layer-menus and before lft/right menu creation
         ns.promiseList.prependLast({
             data   : 'none',
             resolve: createMainStructure
@@ -204546,16 +203041,15 @@ Methods to create standard FCC-web-applications
     }
 
     /*************************************************************************
-    standardMenuFinally(menuList, menuOptions)
-    4: Append menu-items in menuList to the list with item for the standard-menu, and
+    appMenuFinally(menuList, menuOptions)
+    4:  Set loaded or created menu-items in menuList to the list with item for the panel holding the menu (if any), and
         call the users finally-method
     *************************************************************************/
-    function standardMenuFinally(menuList, menuOptions){
-        if (nsApp.setupOptions.standardMenuId){
-            let standardMenuOptions = nsApp.setupOptions[nsApp.setupOptions.standardMenuId].menuOptions;
-
-            if (standardMenuOptions && standardMenuOptions.list)
-                standardMenuOptions.list = standardMenuOptions.list.concat( menuList );
+    function appMenuFinally(menuList, menuOptions){
+        if (nsApp.setupOptions.menuPanelId){
+            let panelMenuOptions = nsApp.setupOptions[nsApp.setupOptions.menuPanelId].menuOptions;
+            if (panelMenuOptions)
+                panelMenuOptions.list = menuList;
         }
 
         if (menuOptions.appFinallyFunc)
@@ -204564,7 +203058,7 @@ Methods to create standard FCC-web-applications
 
     /*************************************************************************
     createMainStructure()
-    5: Create the main structure and the left and/or right menu
+    5: Create the main structure and the left and/or right panel
     *************************************************************************/
     function createMainStructure(){
         var setupOptions = nsApp.setupOptions;
@@ -204577,18 +203071,18 @@ Methods to create standard FCC-web-applications
             applicationHeader   : setupOptions.applicationHeader,
             header              : setupOptions.header,
 
-            //top-, left-, right-, and bottom-menus
-            topMenu             : setupOptions.topMenu,
+            //top-, left-, right-, and bottom-panels
+            topPanel             : setupOptions.topPanel,
 
-            leftMenu            : setupOptions.leftMenu,
-            leftMenuIcon        : setupOptions.leftMenuIcon,
-            keepLeftMenuButton  : setupOptions.keepLeftMenuButton,
+            leftPanel            : setupOptions.leftPanel,
+            leftPanelIcon        : setupOptions.leftPanelIcon,
+            keepLeftPanelButton  : setupOptions.keepLeftPanelButton,
 
-            rightMenu           : setupOptions.rightMenu,
-            rightMenuIcon       : setupOptions.rightMenuIcon,
-            keepRightMenuButton : setupOptions.keepRightMenuButton,
+            rightPanel           : setupOptions.rightPanel,
+            rightPanelIcon       : setupOptions.rightPanelIcon,
+            keepRightPanelButton : setupOptions.keepRightPanelButton,
 
-            bottomMenu          : setupOptions.bottomMenu,
+            bottomPanel          : setupOptions.bottomPanel,
 
             onResizeStart       : setupOptions.onResizeStart,
             onResizeEnd         : setupOptions.onResizeEnd
@@ -204650,53 +203144,67 @@ See src/fcoo-application-create.js
 
     /****************************************************************************
     OPTIONS = {
-        applicationName  : {da:STRING, en:STRING},  //applicationName or applicationHeader are used. Two options available for backward combability
+        //applicationName or applicationHeader are used. Two options available for backward combability
+        applicationName  : {da:STRING, en:STRING},
         applicationHeader: {da:STRING, en:STRING},
 
-        depotOptions: { //Options for saving and loading settings using SavedSettingList (src/fcoo-application-load-save-bookmark-share-setting.js
+        //Options for saving and loading settings using Depot-object (See saved-setting-depot.js)
+        depotOptions: {
             url  : STRING. Url to the service
             token: STRING. Sub-dir with token //Standard "token/"
             depot: STRING. Sub-dir with data  //Standard "depot/"
         }
 
-        topMenu: {
+        topPanel: {
             See description in fcoo/fcoo-application and in nsMap.defaultApplicationOptions below
         }
-        standardMenuOptions: { //Options for the standard-menu/mmenu created by methods in src/fcoo-application-mmenu
-            inclBar    : BOOLEAN,
-            barCloseAll: BOOLEAN,
-            inclBar    : BOOLEAN, if true a bar top-right with buttons from items with options.addToBar = true and favorites (optional) and close-all (if barCloseAll=true)
-            barCloseAll: BOOLEAN, if true a top-bar button is added that closes all open submenus
-            favorites  : BOOLEAN, true = default saving, false: no favorites
-        }
 
-        leftMenu/rightMenu: true or false or {
+        leftPanel/rightPanel: true or false or {
             width: NUMBER,
-            buttons: As leftMenuButtons and rightMenuButtons in fcoo-aapplication = {
+            buttons: As leftPanelButtons and rightPanelButtons = {
                 preButtons  = []buttonOptions or buttonOptions or null //Individuel button(s) placed before the standard buttons
-                save        = true or onClick or buttonOptions, //Standard save-button
-                load        = true or onClick or buttonOptions, //Standard load-button
-                bookmark    = true or onClick or buttonOptions, //Standard bootmark-button
-                share       = true or onClick or buttonOptions, //Standard share-button
-                user        = true or onClick or buttonOptions, //Standard user-button
-                setting     = true or onClick or buttonOptions, //Standard setting-button
+                new         = true or onClick or buttonOptions, //Standard new "something"
+                edit        = true or onClick or buttonOptions, //Standard edit settings
+                save        = true or onClick or buttonOptions, //Standard save save settings
+                load        = true or onClick or buttonOptions, //Standard load load settings
+                bookmark    = true or onClick or buttonOptions,
+                share       = true or onClick or buttonOptions, //Standard share settings
+                user        = true or onClick or buttonOptions,
+
+                cancel      = true or onClick or buttonOptions,
+                ok          = true or onClick or buttonOptions,
+
+                save2       = true or onClick or buttonOptions,
+                reset2      = true or onClick or buttonOptions,
+
+                reset       = true or onClick or buttonOptions, //Standard reset (settings, layers etc)
+                setting     = true or onClick or buttonOptions, //Standard edit global settings (language, formats etc)
                 postButtons = []buttonOptions or buttonOptions or null //Individuel button(s) placed after the standard buttons
             }
 
-            isStandardMenu: true    //True => the standard menu is created in this side using standardMenuOptions and bsMenuOptions
-            bsMenuOptions : {}      //Only if isStandardMenu: true => options for $.BsMmenu when creating the content of the left/right side
+            isStandardMenu: false    //True => the standard menu is created in this side using standardMenuOptions and menuOptions
+            menuOptions   : {}      //Only if isStandardMenu: true => options for $.BsMmenu when creating the content of the left/right side
 
             if isStandardMenu: false:
             fileName: FILENAME, or
             data    : JSON-OBJECT, or
             content : A JSON-OBJECT with content as in fcoo/jquery-bootstrap
 
-            create or resolve : function( data, $container ) - function to create the menus content in $container. Only if fileName or data is given (and isStandardMenu: false)
+            create or resolve : function( data, $container ) - function to create the content of the panels in $container. Only if fileName or data is given (and isStandardMenu: false)
 
         },
 
-        keepLeftMenuButton  : false, //Keeps the left menu-button even if leftMenu is null
-        keepRightMenuButton : false, //Keeps the right menu-button even if rightMenu is null
+        keepLeftPanelButton  : false, //Keeps the left panel-button even if leftPanel is null
+        keepRightPanelButton : false, //Keeps the right panel-button even if rightPanel is null
+
+        //Options for the standard-menu/mmenu created by methods in fcoo-application-mmenu
+        standardMenuOptions: {
+            inclBar    : BOOLEAN,
+            barCloseAll: BOOLEAN,
+            inclBar    : BOOLEAN, if true a bar top-right with buttons from items with options.addToBar = true and favorites (optional) and close-all (if barCloseAll=true)
+            barCloseAll: BOOLEAN, if true a top-bar button is added that closes all open submenus
+            favorites  : BOOLEAN, true = default saving, false: no favorites
+        }
 
 
 
@@ -204727,9 +203235,9 @@ See src/fcoo-application-create.js
                 depot: 'depot/'
             },
 
-            saveLoadShare: '', //STRING or []STRING. "leftMenu", "rightMenu", "topMenu": Defines where the load-, save and share-buttons are shown
+            saveLoadShare: '', //STRING or []STRING. "leftPanel", "rightPanel", "topPanel": Defines where the load-, save and share-buttons are shown
 
-            topMenu            : {
+            topPanel            : {
                 save : false, //If true a save-button is added (see SavedSettingList)
                 load : false, //If true a load-button is added (see SavedSettingList)
                 share: false, //If true a share-button is added (see SavedSettingList)
@@ -204737,13 +203245,13 @@ See src/fcoo-application-create.js
 
             standardMenuOptions: {},
 
-            leftMenu           : false,
-            leftMenuIcon       : 'fa-layer-group',
-            keepLeftMenuButton : false,
+            leftPanel           : false,
+            leftPanelIcon       : 'fa-layer-group',
+            keepLeftPanelButton : false,
 
-            rightMenu          : false,
-            rightMenuIcon      : 'fa-list',
-            keepRightMenuButton: false,
+            rightPanel          : false,
+            rightPanelIcon      : 'fa-list',
+            keepRightPanelButton: false,
 
 
             //Standard setup/options
@@ -205414,11 +203922,14 @@ Create and manage the main structure for FCOO web applications
     Create the main structure return a object with the created element
     ******************************************************************/
     ns.createMain = function( options ){
+
+        ns.__FCOO_APPLICATION_ADJUT_OPTIONS(options);
+
         options = $.extend({}, {
             $mainContainer      : null,
             mainContainerAsHandleContainer: false,
-            maxMenuWidthPercent : 0.5, //Max total width of open menus when change to mode over
-            minMainWidth        : 0,   //Min width of main-container when menu(s) are open
+            maxPanelWidthPercent : 0.5, //Max total width of open panels when change to mode over
+            minMainWidth        : 0,   //Min width of main-container when panel(s) are open
             globalModeOver      : false,
 
             /*
@@ -205427,18 +203938,18 @@ Create and manage the main structure for FCOO web applications
             header
             */
 
-            topMenu             : null,  //Options for top-menu. See src/fcoo-application-top-menu.js
+            topPanel            : null,  //Options for top-panel. See src/fcoo-application-top-panel.js
 
-            leftMenu            : null,      //Options for left-menu. See src/fcoo-application-touch.js. Includes optional buttons: {preButtons,...}
-            leftMenuIcon        : 'fa-bars', //Icon for button that opens left-menu
-            leftMenuButtons     : null,      //Options for buttons in the header of the left-menu. See format below
-            keepLeftMenuButton  : false,     //Keeps the left menu-button even if leftMenu is null
+            leftPanel           : null,      //Options for left-panel. See src/fcoo-application-touch.js. Includes optional buttons: {preButtons,...}
+            leftPanelIcon       : 'fa-bars', //Icon for button that opens left-panel
+            leftPanelButtons    : null,      //Options for buttons in the header of the left-panel. See format below
+            keepLeftPanelButton : false,     //Keeps the left panel-button even if leftPanel is null
 
-            rightMenu           : null,      //Options for right-menu. See src/fcoo-application-touch.js
-            rightMenuIcon       : 'fa-list', //Icon for button that opens right-menu
-            keepRightMenuButton : false,     //Keeps the right menu-button even if rightMenu is null
-            rightMenuButtons    : null,      //Options for buttons in the header of the right-menu. See format below
-            bottomMenu          : null,      //Options for bottom-menu. See src/fcoo-application-touch.js
+            rightPanel          : null,      //Options for right-panel. See src/fcoo-application-touch.js
+            rightPanelIcon      : 'fa-list', //Icon for button that opens right-panel
+            keepRightPanelButton: false,     //Keeps the right panel-button even if rightPanel is null
+            rightPanelButtons   : null,      //Options for buttons in the header of the right-panel. See format below
+            bottomPanel         : null,      //Options for bottom-panel. See src/fcoo-application-touch.js
 
             onResizeStart       : null,  //function(main) to be called when the main-container starts resizing
             onResizing          : null,  //function(main) to be called when the main-container is being resized
@@ -205472,7 +203983,7 @@ Create and manage the main structure for FCOO web applications
                 var addClass = (value === true);
 
                 if (!addClass){
-                    var valueList = $.isArray(value) ? value : [value],
+                    var valueList = Array.isArray(value) ? value : [value],
                         add = true;
                     valueList.forEach( modernizrDeviceProperties => {
                         modernizrDeviceProperties.split(' ').forEach( property => {
@@ -205489,7 +204000,7 @@ Create and manage the main structure for FCOO web applications
 
 
         /*
-        leftMenuButtons or leftMenu.buttons, and rightMenuButtons rightMenu.buttons = {
+        leftPanelButtons or leftPanel.buttons, and rightPanelButtons rightPanel.buttons = {
             preButtons  = []buttonOptions or buttonOptions or null //Individuel button(s) placed before the standard buttons
 
             //Standard buttons = onClick or buttonOptions or true for default onClick
@@ -205509,10 +204020,10 @@ Create and manage the main structure for FCOO web applications
         */
 
         var result = {
-                menus  : [],
+                panels  : [],
                 options: options
             },
-            //Container for all elements used in top-menu
+            //Container for all elements used in top-panel
             $outerContainer = result.$outerContainer =
                 $('<div/>')
                     .addClass("outer-container"),
@@ -205527,106 +204038,106 @@ Create and manage the main structure for FCOO web applications
 
         $mainContainer.addClass("main-container");
 
-        //Append left-menu (if any)
-        if (result.options.leftMenu){
-            result.leftMenu = ns.touchMenu( $.extend({}, result.options.leftMenu, {
+        //Append left-panel (if any)
+        if (result.options.leftPanel){
+            result.leftPanel = ns.touchPanel( $.extend({}, result.options.leftPanel, {
                 position           : 'left',
                 $neighbourContainer: $outerContainer,
-                preMenuClassName   : 'vertical-pre-menu',
+                prePanelClassName   : 'vertical-pre-panel',
                 hideHandleWhenOpen : true,
                 $handleContainer   : $leftAndRightHandleContainer,
                 multiMode          : true,
                 resetListPrepend   : true,
                 main               : result
             }));
-            $body.append( result.leftMenu.$container );
-            result.menus.push(result.leftMenu);
+            $body.append( result.leftPanel.$container );
+            result.panels.push(result.leftPanel);
         }
 
         //Append the outer container
         $outerContainer.appendTo( $body );
 
-        //Create and append top-menu (if any).
-        //Add left-menu if leftMenu: true or keepLeftMenuButton = true. Use leftMenuicon as icon. Same for right-menu
-        if (result.options.topMenu){
-            var topMenuOptions = $.extend({}, result.options.topMenu, {
-                    leftMenu : result.options.leftMenu  || result.options.keepLeftMenuButton  ? {icon: $.FONTAWESOME_PREFIX_STANDARD + ' ' + result.options.leftMenuIcon} : false,
-                    rightMenu: result.options.rightMenu || result.options.keepRightMenuButton ? {icon: $.FONTAWESOME_PREFIX_STANDARD + ' ' +result.options.rightMenuIcon} : false
+        //Create and append top-panel (if any).
+        //Add left-panel if leftPanel: true or keepLeftPanelButton = true. Use leftPanelIcon as icon. Same for right-panel
+        if (result.options.topPanel){
+            var topPanelOptions = $.extend({}, result.options.topPanel, {
+                    leftPanel : result.options.leftPanel  || result.options.keepLeftPanelButton  ? {icon: $.FONTAWESOME_PREFIX_STANDARD + ' ' + result.options.leftPanelIcon} : false,
+                    rightPanel: result.options.rightPanel || result.options.keepRightPanelButton ? {icon: $.FONTAWESOME_PREFIX_STANDARD + ' ' +result.options.rightPanelIcon} : false
                 });
 
-            result.topMenuObject = ns.createTopMenu( topMenuOptions );
-            $outerContainer.append( result.topMenuObject.$container );
+            result.topPanelObject = ns.createTopPanel( topPanelOptions );
+            $outerContainer.append( result.topPanelObject.$container );
 
 
-            result.topMenu = ns.touchMenu({
+            result.topPanel = ns.touchPanel({
                 position           : 'top',
-                height             : result.topMenuObject.$menu.outerHeight() + 1,  //+ 1 = bottom-border
+                height             : result.topPanelObject.$panel.outerHeight() + 1,  //+ 1 = bottom-border
                 $neighbourContainer: $mainContainer,
-                $container         : result.topMenuObject.$menu,
-                $menu              : false,
+                $container         : result.topPanelObject.$panel,
+                $panel              : false,
 
                 isOpen             : true,
                 standardHandler    : true,
-                main: result
+                main               : result
             });
-            result.menus.push(result.topMenu);
+            result.panels.push(result.topPanel);
         }
 
         //Append main-container to outer-container
         $outerContainer.append( $mainContainer );
 
-        //Create and append bottom-menu (if any)
-        if (result.options.bottomMenu){
-            result.bottomMenu = ns.touchMenu( $.extend({}, result.options.bottomMenu, {
+        //Create and append bottom-panel (if any)
+        if (result.options.bottomPanel){
+            result.bottomPanel = ns.touchPanel( $.extend({}, result.options.bottomPanel, {
                 position           : 'bottom',
                 $neighbourContainer: $mainContainer,
                 main: result
             }));
-            $outerContainer.append( result.bottomMenu.$container );
-            result.menus.push(result.bottomMenu);
+            $outerContainer.append( result.bottomPanel.$container );
+            result.panels.push(result.bottomPanel);
         }
 
-        //Create and append right-menu (if any). It appear as a box
-        if (result.options.rightMenu){
-            result.rightMenu = ns.touchMenu( $.extend({}, result.options.rightMenu, {
+        //Create and append right-panel (if any). It appear as a box
+        if (result.options.rightPanel){
+            result.rightPanel = ns.touchPanel( $.extend({}, result.options.rightPanel, {
                 position           : 'right',
                 $neighbourContainer: $outerContainer,
-                preMenuClassName   : 'vertical-pre-menu',
+                prePanelClassName   : 'vertical-pre-panel',
                 hideHandleWhenOpen : true,
                 $handleContainer   : $leftAndRightHandleContainer,
                 multiMode          : true,
-                main: result
+                main               : result
             }));
-            $body.append( result.rightMenu.$container );
-            result.menus.push(result.rightMenu);
+            $body.append( result.rightPanel.$container );
+            result.panels.push(result.rightPanel);
         }
 
-        //Create close-button in left and right pre-menu
+        //Create close-button in left and right pre-panel
         var iconPrefix = 'fa-chevron-';
         //OR var iconPrefix = 'fa-chevron-circle-';
         //OR var iconPrefix = 'fa-arrow-';
 
-        //Toggle left and right-menu on click
-        if (result.options.leftMenu)
-            result.topMenuObject.leftMenu.on('click', $.proxy(result.leftMenu.toggle, result.leftMenu));
+        //Toggle left and right-panel on click
+        if (result.options.leftPanel)
+            result.topPanelObject.leftPanel.on('click', $.proxy(result.leftPanel.toggle, result.leftPanel));
 
-        if (result.options.rightMenu)
-            result.topMenuObject.rightMenu.on('click', $.proxy(result.rightMenu.toggle, result.rightMenu));
+        if (result.options.rightPanel)
+            result.topPanelObject.rightPanel.on('click', $.proxy(result.rightPanel.toggle, result.rightPanel));
 
 
-        //If application has left-menu and/or right-menu: Set up event to change between mode=side and mode=over
-        if (result.options.leftMenu || result.options.rightMenu){
+        //If application has left-panel and/or right-panel: Set up event to change between mode=side and mode=over
+        if (result.options.leftPanel || result.options.rightPanel){
             //Left and right points to each other
-            if (result.options.leftMenu && result.options.rightMenu){
-                var _onOpen  = result._left_right_menu_onOpen.bind(result),
-                    _onClose = result._left_right_menu_onClose.bind(result);
-                result.leftMenu._onOpen.push(_onOpen);
-                result.leftMenu._onClose.push(_onClose);
-                result.leftMenu.theOtherMenu = result.rightMenu;
+            if (result.options.leftPanel && result.options.rightPanel){
+                var _onOpen  = result._left_right_panel_onOpen.bind(result),
+                    _onClose = result._left_right_panel_onClose.bind(result);
+                result.leftPanel._onOpen.push(_onOpen);
+                result.leftPanel._onClose.push(_onClose);
+                result.leftPanel.theOtherPanel = result.rightPanel;
 
-                result.rightMenu._onOpen.push(_onOpen);
-                result.rightMenu._onClose.push(_onClose);
-                result.rightMenu.theOtherMenu = result.leftMenu;
+                result.rightPanel._onOpen.push(_onOpen);
+                result.rightPanel._onClose.push(_onClose);
+                result.rightPanel.theOtherPanel = result.leftPanel;
             }
 
             $body.resize( result._onBodyResize.bind(result) );
@@ -205634,15 +204145,15 @@ Create and manage the main structure for FCOO web applications
         }
 
         //**************************************************
-        //Add menu-buttons to left and right menu. button-options can be in options.[left/right]MenuButtons or options.[left/right]Menu.buttons
-        function createMenuButtons(side){
-            var menuOptions = result.options[side+'Menu'],
-                options     = menuOptions ? menuOptions.buttons || result.options[side+'MenuButtons'] || {} : {},
-                menu        = result[side+'Menu'],
+        //Add panel-buttons to left and right panel. button-options can be in options.[left/right]PanelButtons or options.[left/right]Panel.buttons
+        function createPanelButtons(side){
+            var panelOptions = result.options[side+'Panel'],
+                options     = panelOptions ? panelOptions.buttons || result.options[side+'PanelButtons'] || {} : {},
+                panel        = result[side+'Panel'],
                 sideIsLeft  = side == 'left',
                 sideIsRight = side == 'right',
-                multiSize   = menu ? menu.options.sizeList.length > 1 : false,
-                $container  = menu ? menu.$preMenu : null;
+                multiSize   = panel ? panel.options.sizeList.length > 1 : false,
+                $container  = panel ? panel.$prePanel : null;
 
             if (!$container) return;
 
@@ -205655,34 +204166,36 @@ Create and manage the main structure for FCOO web applications
                     .toggleClass('flex-grow-1', sideIsLeft)
                     .toggleClass('btn-group', multiSize);
 
-            menu.btnDecSize =
+            panel.btnDecSize =
                 $.bsButton({
                     bigIcon: true,
                     square : true,
                     icon   : iconPrefix + side,
-                    onClick: menu.decSize,
-                    context: menu
+                    class  : 'flex-grow-0',
+                    onClick: panel.decSize,
+                    context: panel
                 }).appendTo($closeButtonDiv);
 
             if (multiSize){
-                menu.btnIncSize =
+                panel.btnIncSize =
                     $.bsButton({
                         bigIcon: true,
                         square : true,
+                        class  :'flex-grow-0',
                         icon   : iconPrefix + (sideIsLeft ? 'right' : 'left'),
-                        onClick: menu.incSize,
-                        context: menu
+                        onClick: panel.incSize,
+                        context: panel
                     });
                 if (sideIsLeft)
-                    $closeButtonDiv.append( menu.btnIncSize );
+                    $closeButtonDiv.append( panel.btnIncSize );
                 else
-                    $closeButtonDiv.prepend( menu.btnIncSize );
+                    $closeButtonDiv.prepend( panel.btnIncSize );
             }
 
 
             var buttonGroups = [];
             if (options.preButtons)
-                buttonGroups.push( $.isArray(options.preButtons) ? options.preButtons : [options.preButtons]);
+                buttonGroups.push( Array.isArray(options.preButtons) ? options.preButtons : [options.preButtons]);
 
             //Add standard buttons
             var buttonList = [];
@@ -205720,7 +204233,7 @@ Create and manage the main structure for FCOO web applications
                 buttonGroups.push(buttonList);
 
             if (options.postButtons)
-                buttonGroups.push( $.isArray(options.postButtons) ? options.postButtons : [options.postButtons]);
+                buttonGroups.push( Array.isArray(options.postButtons) ? options.postButtons : [options.postButtons]);
 
             //Create the buttons
             $.each(buttonGroups, function(index, buttonList){
@@ -205745,27 +204258,27 @@ Create and manage the main structure for FCOO web applications
                 $closeButtonDiv.appendTo($container);
         }
         //****************************************************
-        createMenuButtons('left');
-        createMenuButtons('right');
+        createPanelButtons('left');
+        createPanelButtons('right');
 
 
         /*
         Set up for detecting resize-start and resize-end of main-container
         */
 
-        //Detect when any of the touch-menus are opened/closed using touch
+        //Detect when any of the touch-panels are opened/closed using touch
         result.options.onResizeStart = result.options.onResizeStart || result.options.onResize;
 
         $mainContainer.resize( result._main_onResize.bind(result) );
 
-        $.each(['leftMenu', 'rightMenu', 'topMenu', 'bottomMenu'], function(index, menuId){
-            var menu = result[menuId];
-            if (menu){
-                menu.onTouchStart = result._mainResize_onTouchStart.bind(result);
-                menu.onTouchEnd   = result._mainResize_onTouchEnd.bind(result);
+        $.each(['leftPanel', 'rightPanel', 'topPanel', 'bottomPanel'], function(index, id){
+            var panel = result[id];
+            if (panel){
+                panel.onTouchStart = result._mainResize_onTouchStart.bind(result);
+                panel.onTouchEnd   = result._mainResize_onTouchEnd.bind(result);
 
-                menu._onOpen.push( result._mainResize_onOpenOrClose.bind(result) );
-                menu._onClose.push( result._mainResize_onOpenOrClose.bind(result) );
+                panel._onOpen.push( result._mainResize_onOpenOrClose.bind(result) );
+                panel._onClose.push( result._mainResize_onOpenOrClose.bind(result) );
             }
         });
 
@@ -205779,25 +204292,25 @@ Create and manage the main structure for FCOO web applications
     var main_prototype = {
             wasForcedToClose: null,
 
-            _maxSingleMenuWidth: function(){
+            _maxSinglePanelWidth: function(){
                 var result = 0;
 
-                if (this.leftMenu)
-                    result = Math.max(result, this.leftMenu.options.menuDimAndSize.size);
+                if (this.leftPanel)
+                    result = Math.max(result, this.leftPanel.options.panelDimAndSize.size);
 
-                if (this.rightMenu)
-                    result = Math.max(result, this.rightMenu.options.menuDimAndSize.size);
+                if (this.rightPanel)
+                    result = Math.max(result, this.rightPanel.options.panelDimAndSize.size);
 
                 return result;
             },
 
 
-            _totalMenuWidth: function(){
+            _totalPanelWidth: function(){
                 var result = 0;
-                if (this.options.leftMenu && this.options.rightMenu){
-                    [this.leftMenu, this.rightMenu].forEach(menu => {
-                        const width = menu.options.menuDimAndSize.size;
-                        result = result + (typeof width == 'number' ? width : menu.$container.width());
+                if (this.options.leftPanel && this.options.rightPanel){
+                    [this.leftPanel, this.rightPanel].forEach(panel => {
+                        const width = panel.options.panelDimAndSize.size;
+                        result = result + (typeof width == 'number' ? width : panel.$container.width());
                     });
                 }
                 return result;
@@ -205806,16 +204319,16 @@ Create and manage the main structure for FCOO web applications
 
 
             /******************************************************
-            Functions to manage the automatic closing of the menu
-            on the other side when a left or right menu is opened
+            Functions to manage the automatic closing of the panel
+            on the other side when a left or right panel is opened
             ******************************************************/
-            _left_right_menu_onOpen: function(menu){
-                this.lastOpenedMenu = menu;
+            _left_right_panel_onOpen: function(panel){
+                this.lastOpenedPanel = panel;
                 this._onBodyResize();
             },
 
-            _left_right_menu_onClose: function(menu){
-                if (this.wasForcedToClose && (this.wasForcedToClose !== menu))
+            _left_right_panel_onClose: function(panel){
+                if (this.wasForcedToClose && (this.wasForcedToClose !== panel))
                     this.wasForcedToClose.open();
                 this.wasForcedToClose = null;
             },
@@ -205825,23 +204338,23 @@ Create and manage the main structure for FCOO web applications
                 this.wasForcedToClose = null;
 
                 var bodyWidth = $body.width(),
-                    maxTotalMenuWidthAllowed = Math.min(this.options.maxMenuWidthPercent*bodyWidth, bodyWidth - this.options.minMainWidth),
-                    newModeIsOver = this._maxSingleMenuWidth() >=  maxTotalMenuWidthAllowed,
-                    totalMenuWidth = this._totalMenuWidth(),
-                    //Find last opened menu if there are two oen menus
-                    firstOpenedMenu = totalMenuWidth && this.leftMenu.isOpen && this.rightMenu.isOpen ? (this.lastOpenedMenu ? this.lastOpenedMenu.theOtherMenu : null) : null;
+                    maxTotalPanelWidthAllowed = Math.min(this.options.maxPanelWidthPercent*bodyWidth, bodyWidth - this.options.minMainWidth),
+                    newModeIsOver = this._maxSinglePanelWidth() >=  maxTotalPanelWidthAllowed,
+                    totalPanelWidth = this._totalPanelWidth(),
+                    //Find last opened panel if there are two open panels
+                    firstOpenedPanel = totalPanelWidth && this.leftPanel.isOpen && this.rightPanel.isOpen ? (this.lastOpenedPanel ? this.lastOpenedPanel.theOtherPanel : null) : null;
 
                 this.isResizing = true;
                 this.options.globalModeOver = newModeIsOver;
-                if (this.leftMenu)  this.leftMenu.setMode ( newModeIsOver );
-                if (this.rightMenu) this.rightMenu.setMode( newModeIsOver );
+                if (this.leftPanel)  this.leftPanel.setMode ( newModeIsOver );
+                if (this.rightPanel) this.rightPanel.setMode( newModeIsOver );
                 this.isResizing = false;
 
-                //If both menus are open and mode == over or not space for both => close the menu first opened
-                if (firstOpenedMenu && (newModeIsOver || (totalMenuWidth > maxTotalMenuWidthAllowed))){
-                    firstOpenedMenu.close();
+                //If both panels are open and mode == over or not space for both => close the panel first opened
+                if (firstOpenedPanel && (newModeIsOver || (totalPanelWidth > maxTotalPanelWidthAllowed))){
+                    firstOpenedPanel.close();
                     if (!newModeIsOver)
-                        this.wasForcedToClose = firstOpenedMenu;
+                        this.wasForcedToClose = firstOpenedPanel;
                 }
             },
 
@@ -206199,8 +204712,8 @@ Objects and methods to set up Mmenu via $.bsMmenu
     var favoriteSetting = null, //SettingGroup to hold the favorites in the menus
         favoriteSettingId = '__FAVORITES__',
 
-menuSetting = null, //SettingGroup to hold the state of the menu (open/closed)
-menuSettingId = '__MENU__',
+        menuSetting = null, //SettingGroup to hold the state of the menu (open/closed)
+        menuSettingId = '__MENU__',
 
         bsMenus = {}; //{id:BsMenu}
 
@@ -206216,7 +204729,7 @@ menuSettingId = '__MENU__',
     function favoritesSetting_afterLoad(){
         $.each(bsMenus, (id, bsMenu) => setFavorites(bsMenu) );
     }
-    
+
     function favorite_get(menuId, itemId){
         if (favoriteSetting && favoriteSetting.data && favoriteSetting.data[menuId])
             return favoriteSetting.data[menuId][itemId];
@@ -206237,11 +204750,14 @@ menuSettingId = '__MENU__',
     function menusSetting_afterLoad(){
         if (menuSetting && menuSetting.data)
             $.each(bsMenus, (id, bsMenu) => {
+
+                bsMenu.openItemIdList = bsMenu.openItemIdList || {};
+
                 (menuSetting.data[id] || '').split(' ').forEach( menuItemId => {
-                    let menuItem = bsMenu.getItem(menuItemId);                 
-                    if (menuItem)
-                        menuItem.open();
+                    bsMenu.openItemIdList[menuItemId] = true;
                 });
+
+                bsMenu.setOpenAndClosedItems();
             });
     }
 
@@ -206249,15 +204765,15 @@ menuSettingId = '__MENU__',
     function menu_onOpenOrClose(menuItem, open, bsMenu){
         //Save a list of all open menu-item-ids
         let data = [];
-        $.each(bsMenu.openItemIdList || {}, (id, open) => { if (open) data.push(id); });       
+        $.each(bsMenu.openItemIdList || {}, (id, open) => { if (open) data.push(id); });
 
         if (menuSetting && menuSetting.data){
             menuSetting.data = menuSetting.data || {};
             menuSetting.data[bsMenu.id] = data.join(' ');
             menuSetting.saveAs(menuSettingId);
         }
-    }        
-    
+    }
+
     ns.createMmenu = function( menuId, options, $container ){
         if (!favoriteSetting){
             favoriteSetting = new ns.SettingGroup({simpleMode: true});
@@ -206293,18 +204809,18 @@ menuSettingId = '__MENU__',
             options.reset.title = ns.texts.reset;
 
         }
-        
+
         //Set default save open/close
         if (!options.onOpenOrClose)
             options.onOpenOrClose = menu_onOpenOrClose;
 
-        
+
         //Create the menu
         var bsMenu =
                 $.bsMmenu(
                     options, {
                         offCanvas      : false,
-                        slidingSubmenus: ns.modernizrDevice.isPhone
+                        slidingSubmenus: false,//ns.modernizrDevice.isPhone
                     }).create( $container );
 
         bsMenu.id = bsMenu.options.id || menuId;
@@ -206614,7 +205130,7 @@ load setup-files in fcoo.promiseList after checking for test-modes
     //Adjust options for ns.promiseList
     ['prePromiseAll', 'finally', 'finish'].forEach( function(optionsId){
         var opt = ns.promiseList.options[optionsId];
-        ns.promiseList.options[optionsId] = opt ? ($.isArray(opt) ? opt : [opt]) : [];
+        ns.promiseList.options[optionsId] = opt ? (Array.isArray(opt) ? opt : [opt]) : [];
     });
 
     /***********************************************************************
@@ -206880,7 +205396,7 @@ load setup-files in fcoo.promiseList after checking for test-modes
 
         //*******************************************
         function adjustFileName(fileNameOrList, testRec){
-            if ($.isArray(fileNameOrList)){
+            if (Array.isArray(fileNameOrList)){
                 $.each(fileNameOrList, function(index, fileName){
                     fileNameOrList[index] = adjustFileName(fileName, testRec);
                 });
@@ -206936,7 +205452,7 @@ load setup-files in fcoo.promiseList after checking for test-modes
         //Check all files in allList and adjust the file(s) to load
         var fileNameVersions = promiseList.options.fileNameVersions;
         allList.forEach( function( promiseOptions ){
-            var onlyFileName = promiseOptions.fileName && !$.isArray(promiseOptions.fileName) ? promiseOptions.fileName.fileName : '',
+            var onlyFileName = promiseOptions.fileName && !Array.isArray(promiseOptions.fileName) ? promiseOptions.fileName.fileName : '',
                 fileVersion = fileNameVersions[onlyFileName];
 
             if (fileVersion){
@@ -207247,7 +205763,7 @@ Example:
 
 let ownerList = {};
 //In some package :
-ownerList['OBSERVATIONS"] = function(options, addMenu){
+ownerList['OBSERVATIONS"] = function(options, addMenu, adjustParentMenuOptions, menuOptions)
     //Adjust the options (if needed)
     ...
 
@@ -207264,7 +205780,7 @@ and the menu "OBSERVATIONS_MENU" are being adjustedd and have three sub-menus ad
 
 It is possible to use another owner-list when creating another version of the menu-structure to have different adjustments
 
-All menu-items in standard menu-structure that reference to a "owner-function" in the given user-list, are removed.
+All menu-items in standard menu-structure that do not reference to a "owner-function" in the given user-list, are removed.
 In the example:
 If the applicatuion do not include a package that sets a owner-function for "OBSERVATIONS"
 the hole menu-item "OBSERVATIONS_MENU" are removed automatic.
@@ -207273,26 +205789,35 @@ The sub-menus and/or the finally options for a menu-item can also be in a sepera
 
 The reading of the setup-file (fcoo-menu.json) or other file or direct options are always do via ns.promiseList.append
 
-METHOD: window.fcoo.createFCOOMenu(ownerList: OWNER_LIST, fileNameOrMenuOptions: FILENAME or MENU_OPTIONS)
+Method window.fcoo.createFCOOMenu(options: MENU_OPTIONS)
 
-OWNER_LIST = {id:MENUITEM_ID} of FUNCTION(options: MENUITEM_OPTIONS, addMenu: function(list: MENUITEM_LIST))
-The function given for ownerList[ID] can also contain info on sub-menuitems and/or include reading a setup-file for the specific menu-item
+    MENU_OPTIONS = {
+        fileName: FILENAME,
+        menuList or list: MENU_ITEM_LIST
+        ownerList       : OWNER_LIST
+        finallyFunc     : FUNCTION,
+        fileNameOrMenuOptions: FILENAME or MENU_ITEM_LIST
+    }
 
-FILENAME = Path to file. Two versions:
-    1: Relative path locally e.q. "data/info.json"
-    2: Using ns.dataFilePath (See fcoo-data-files): {subDir, fileName}.
-    E.q. {subDir: "theSubDir", fileName:"theFileName.json"} => "https://app.fcoo.dk/static/theSubDir/theFileName.json"
-The content of the file must be MENU_OPTIONS
+    FILENAME = Path to file. Two versions:
+        1: Relative path locally e.q. "data/info.json"
+        2: Using ns.dataFilePath (See fcoo-data-files): {subDir, fileName}.
+        E.q. {subDir: "theSubDir", fileName:"theFileName.json"} => "https://app.fcoo.dk/static/theSubDir/theFileName.json"
+    The content of the file must be MENU_ITEM_LIST
 
-MENU_OPTIONS = MENUITEM_LIST =[]MENUITEM_OPTIONS
+    MENU_ITEM_LIST = []MENU_ITEM
 
-MENUITEM_OPTIONS = {icon, text,..., list:MENU_OPTIONS}  - The options to create the menu-item. list = [] of sub-menus, or
-MENUITEM_OPTIONS = {ID: BOOLEAN}                        - false : Do not include, true: Include with default options (=LAYEROPTIONS) given in the packages that build the layer, or
-MENUITEM_OPTIONS = {ID: FILENAME}                       - Include with the options (=LAYEROPTIONS) given in FILENAME pared with the default options, or
-MENUITEM_OPTIONS = {ID: (=OWNER_ID)} or OWNER_ID        - Include with (=LAYEROPTIONS) pared with the default options, or
-MENUITEM_OPTIONS = MMENUITEMOPTIONS                     = Options for a menu-item without layer-toggle. See fcoo/jquery-bootstrap-mmenu for details.
+    MENU_ITEM = {icon, text,..., list:MENU_ITEM_LIST} - The options to create the menu-item. list = [] of sub-menus, or
+    MENU_ITEM = {ID: BOOLEAN}                         - false : Do not include, true: Include with default options (=LAYEROPTIONS) given in the packages that build the layer, or
+    MENU_ITEM = {ID: FILENAME}                        - Include with the options (=LAYEROPTIONS) given in FILENAME pared with the default options, or
+    MENU_ITEM = {ID: (=OWNER_ID)} or OWNER_ID         - Include with (=LAYEROPTIONS) pared with the default options, or
+    MENU_ITEM = MMENUITEMOPTIONS                      - Options for a menu-item without layer-toggle. See fcoo/jquery-bootstrap-mmenu for details.
 
-OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
+    OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
+
+    OWNER_LIST = {MENU_ITEM_ID: FUNCTION(options: MENU_ITEM, addMenu: function(list: MENU_ITEM_LIST))}
+
+
 
 ****************************************************************************/
 (function ($, moment, window/*, document, undefined*/) {
@@ -207302,9 +205827,31 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
 
 
     /****************************************************************************
+    4: "Load" layerMenu and create the layers and the options for the mmenu
+    5: "Load" the added layers via there build-method
+   /****************************************************************************/
 
-4: "Load" layerMenu and create the layers and the options for the mmenu
-5: "Load" the added layers via there build-method
+    //adjustMenuOptions( menuOptions ) adjust menuOptions to allow simple list/object with menu-items
+    ns.adjustMenuOptions = function( menuOptions ){
+        if (!menuOptions)
+            return null;
+
+        //If menuOptions isn't a array and contain "fileName", "menuList", "list", or "fileNameOrMenuOptions" it is a "full" menuOptions.
+        if (!Array.isArray(menuOptions)){
+            if (window.intervals.isFileName(menuOptions))
+                return {fileName: menuOptions};
+
+            let returnIt = false;
+            ['fileName', 'menuList', 'list', 'fileNameOrMenuOptions', 'ownerList', 'finallyFunc'].forEach( id => {
+                if (menuOptions[id] !== undefined)
+                    returnIt = true;
+            });
+
+            if (returnIt)
+                return menuOptions;
+        }
+        return {list: menuOptions};
+    };
 
 
     /*********************************************
@@ -207348,8 +205895,10 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
         }
 
         menuItem.id = menuItem.id || id;
+
         //Convert/adjust the items submenus (in list or submenus)
-        menuItem.list = convertList( menuItem.list || menuItem.submenus );
+        if (menuItem.list || menuItem.submenus)
+            menuItem.list = convertList( menuItem.list || menuItem.submenus );
         delete menuItem.submenus;
 
         return menuItem;
@@ -207361,7 +205910,7 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
             return null;
 
         var result = [];
-        if ($.isArray(listOrSubmenus))
+        if (Array.isArray(listOrSubmenus))
             $.each(listOrSubmenus, (index, menuItem) => {
                 var adjustedMenuItem = adjustMenuItem(null, menuItem);
                 if (adjustedMenuItem)
@@ -207380,17 +205929,35 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
 
 
     /*************************************************************************
-    createFCOOMenu(options = {ownerList, finallyFunc, fileNameOrMenuOptions})
+    createFCOOMenu(options)
+    options = {
+        fileName             : FILENAME,
+        menuList or list     : MENU_ITEM_LIST
+        ownerList            : OWNER_LIST
+        finallyFunc          : FUNCTION,
+        fileNameOrMenuOptions: FILENAME or MENU_ITEM_LIST
+    }
     *************************************************************************/
-    ns.createFCOOMenu = function(options){
+    ns.createFCOOMenu = function( options ){
         options.replaceMenuItems = {};
-        options.fileNameOrMenuOptions = options.fileNameOrMenuOptions || {subDir: 'setup', fileName:'fcoo-menu.json'}; //File name rettes til fcoo-menu.json
+        options.fileNameOrMenuOptions =
+            options.fileNameOrMenuOptions ||
+            options.fileName ||
+            options.menuList ||
+            options.list ||
+            {subDir: 'setup', fileName: 'fcoo-menu.json'};
 
-        ns.promiseList.append( ns.options2promiseOptions( options.fileNameOrMenuOptions, resolveMenu.bind(null, options), true ) );
+        ns.promiseList.append(
+            ns.options2promiseOptions(
+                options.fileNameOrMenuOptions,
+                resolveMenu.bind(null, options),
+                true
+            )
+        );
     };
 
     /*********************************************
-
+    resolveMenu(options, listOrMenus)
     *********************************************/
     function resolveMenu(options, listOrMenus){
         options.menuList = convertList(listOrMenus);
@@ -207406,23 +205973,24 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
     }
 
     /*********************************************
-
+    createMenu(menuList, parentMenuOptions, options)
     *********************************************/
     function createMenu(menuList, parentMenuOptions, options){
         $.each(menuList, function(index, menuItem){
-            let ownerFunc = menuItem.isOwnerMenu && !menuItem.ownerFuncCalled ? options.ownerList[menuItem.id] : null;
-
+            let ownerFunc = menuItem.isOwnerMenu && options.ownerList && !menuItem.ownerFuncCalled ? options.ownerList[menuItem.id] : null;
             if (ownerFunc){
                 ownerFunc(
                     menuItem.options || {},
-                    function(menuItemOrList)                     { addMenu(menuItemOrList, menuList, menuItem.id, options); },  //addMenu
-                    function(adjustmentsToParentMenuOptions = {}){ $.extend(parentMenuOptions, adjustmentsToParentMenuOptions); }   //adjustParentMenuOptions
+                    function(menuItemOrList)                     { addMenu(menuItemOrList, menuList, menuItem.id, options); },      //addMenu
+                    function(adjustmentsToParentMenuOptions = {}){ $.extend(parentMenuOptions, adjustmentsToParentMenuOptions); },  //adjustParentMenuOptions
+                    options                                                                                                         //menuOptions
                 );
 
                 //Mark the owner-menu as completed
                 menuList[index].ownerFuncCalled = true;
 
             }
+
             if (menuItem.list)
                 createMenu(menuItem.list, menuItem, options);
         });
@@ -207433,24 +206001,36 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
     *********************************************/
     function addMenu(menuItemOrList, parentList, id, options){
         //Append menuItemOrList to replaceMenuItems to be replaced in updateMenuList
-        options.replaceMenuItems[id] = $.isArray(menuItemOrList) ? menuItemOrList : [menuItemOrList];
+        options.replaceMenuItems[id] = options.replaceMenuItems[id] || [];
+        options.replaceMenuItems[id] = options.replaceMenuItems[id].concat( Array.isArray(menuItemOrList) ? menuItemOrList : [menuItemOrList] );
     }
 
     /*********************************************
 
     *********************************************/
     function finishMenu(options){
+        //**************************************************
         //If any owner-function was called => Check again since some owner-functions may have just added new menuItems and owner-functions
-        let createMenuAgain = false;
-        options.menuList.forEach(menuItem => {
-            if (menuItem.isOwnerMenu && !menuItem.ownerFuncCalled)
-                createMenuAgain = true;
-        });
+        function checkMenuList( menuList ){
+            let createMenuAgain = false;
+            (menuList || []).forEach(menuItem => {
+                if (menuItem.isOwnerMenu && !menuItem.ownerFuncCalled)
+                    createMenuAgain = true;
+                if (menuItem.list)
+                    checkMenuList( menuItem.list );
+            });
+            if (createMenuAgain)
+                createMenu(menuList, {}, options);
+        }
+        //**************************************************
 
-        if (createMenuAgain)
-            createMenu(options.menuList, {}, options);
+        //1: Update all menu-items
+        updateMenuList(options.menuList, options);
 
-        //Remove any empty menu-items
+        //2: Check if any menu-item need updating/creating
+        checkMenuList(options.menuList);
+
+        //3: Update all menu-items again
         updateMenuList(options.menuList, options);
 
         if (options.finallyFunc)
@@ -207473,8 +206053,6 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
 
         for (index=menuList.length-1; index>=0; index--){
             menuItem = menuList[index];
-
-
             //Convert icon (if exists and possible)
             if (menuItem.icon && $.isPlainObject(menuItem.icon)){
                 //Convert icon with colorName(s) to "real" icons
@@ -207490,14 +206068,17 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
                     );
             }
 
-
             if (menuItem && menuItem.list)
                 updateMenuList(menuItem.list, options);
 
             if (menuItem && !menuItem.isOwnerMenu && ((menuItem.list && menuItem.list.length) || menuItem.type))
                 /* Keep menu-item*/;
             else
-                if (!options.keepAll)
+                if (options.keepAll){
+                    menuItem.icon = menuItem.icon || 'far fa-question';
+                    menuItem.text = menuItem.text || {da: 'MANGLER', en:'MISSING'};
+                }
+                else
                     menuList.splice(index, 1);
         }
     }
@@ -207508,14 +206089,14 @@ OWNER_ID = STRING = Ref. to a entry in the given OWNER_LIST
 
 ;
 /****************************************************************************
-	fcoo-application-top-menu.js
+	fcoo-application-top-panel.js
 
 	(c) 2017, FCOO
 
 	https://gitlab.com/fcoo/fcoo-application
 	https://gitlab.com/fcoo
 
-Create and manage the top-menu for FCOO web applications
+Create and manage the top-panel for FCOO web applications
 
 ****************************************************************************/
 
@@ -207526,20 +206107,20 @@ Create and manage the top-menu for FCOO web applications
     var ns = window.fcoo = window.fcoo || {};
 
     /**************************************************
-    defaultTopMenuButton
-    Create standard button for the top-menu
+    defaultTopPanelButton
+    Create standard button for the top-panel
     **************************************************/
-    function defaultTopMenuButton( $menu, options ){
+    function defaultTopPanelButton( $panel, options ){
         options = $.extend({bigIcon: true, square: true}, options);
         var $result = $.bsButton( options );
         if (options.title)
             $result.i18n(options.title, 'title');
-        $result.addClass('top-menu-item');
+        $result.addClass('top-panel-item');
         return $result;
     }
 
-    function createOpenMenuButton( $menu, elementOptions, menuOptions/*, topMenu */){
-        return defaultTopMenuButton($menu, menuOptions);
+    function createOpenPanelButton( $panel, elementOptions, panelOptions/*, topPanel */){
+        return defaultTopPanelButton($panel, panelOptions);
     }
 
     function defaultAddToElementList( $element, elementList, priority, minWidth ){
@@ -207551,46 +206132,46 @@ Create and manage the top-menu for FCOO web applications
     }
 
     /**************************************************
-    messageGroupTopMenuButton( $menu, allReadIcon, notAllReadIcon )
+    messageGroupTopPanelButton( $panel, allReadIcon, notAllReadIcon )
     Create a button used for message-groups
     The button contains two icons:
         allReadIcon   : displayed when all messages are read
         notAllReadIcon: displayed when one or more message is unread
     **************************************************/
-    function messageGroupTopMenuButton( $menu, allReadIcon, notAllReadIcon ){
+    function messageGroupTopPanelButton( $panel, allReadIcon, notAllReadIcon ){
         var iconList = [];
         function addIcon( icon, className ){
-            icon = $.isArray(icon) ? icon : [icon];
+            icon = Array.isArray(icon) ? icon : [icon];
             icon.forEach( iconClass => iconList.push(iconClass + ' ' + className ) );
         }
         addIcon(allReadIcon,     'show-for-all-read');
         addIcon(notAllReadIcon , 'hide-for-all-read');
-        return defaultTopMenuButton($menu, {icon: [iconList]} ).addClass('all-read'); //all-read: Default no new message
+        return defaultTopPanelButton($panel, {icon: [iconList]} ).addClass('all-read'); //all-read: Default no new message
     }
 
     /**********************************************
-    topMenuElementList = list of options for elements in the top menu
-    buttonInfo = options for a button in the top-menu
-        id       : id from options passed to createTopMenu
+    topPanelElementList = list of options for elements in the top panel
+    buttonInfo = options for a button in the top-panel
+        id       : id from options passed to createTopPanel
         rightSide: true/false. - true => the button is placed to the right
         exclude  : true/false - if true the button is not included in calculation of the total width
         title    : null - title for the button
         icon     : null - icon-class for the button
-        create   : function($menu, elementOptions, menuOptions, topMenu) create and return $element. - function to create the button
+        create   : function($panel, elementOptions, panelOptions, topPanel) create and return $element. - function to create the button
     **********************************************/
-    var topMenuElementList = [
+    var topPanelElementList = [
         {
-            id      : 'leftMenu',
+            id      : 'leftPanel',
             priority: 0,
-            create  : createOpenMenuButton
+            create  : createOpenPanelButton
         },
 
         //***************************************************************
         {
             id: 'logo',
-            create: function( $menu/*, elementOptions, menuOptions, topMenu*/ ){
+            create: function( $panel/*, elementOptions, panelOptions, topPanel*/ ){
                 //Owners abbreviation with click to show "About OWNER"
-                return defaultTopMenuButton( $menu, {
+                return defaultTopPanelButton( $panel, {
                         square : false,
                         title  : 'about:owner',
                         onClick: ns.aboutOwner
@@ -207598,7 +206179,7 @@ Create and manage the top-menu for FCOO web applications
 
                 /* With FCOO-logo
                 return $('<a/>')
-                            .addClass( 'icon-fcoo-logo-contrast btn btn-jb standard top-menu-item' )
+                            .addClass( 'icon-fcoo-logo-contrast btn btn-jb standard top-panel-item' )
                             .i18n('about:owner', 'title')
 
                             .on('click', ns.aboutOwner);
@@ -207612,8 +206193,8 @@ Create and manage the top-menu for FCOO web applications
         //Save, load and share
         {
             id      :'save',
-            create  : function( $menu/*, elementOptions, menuOptions*/ ){
-                return defaultTopMenuButton($menu, {
+            create  : function( $panel/*, elementOptions, panelOptions*/ ){
+                return defaultTopPanelButton($panel, {
                     icon    : 'fa-save',
                     title   : {da: 'Gem', en: 'Save'},
                     newGroup: true,
@@ -207624,8 +206205,8 @@ Create and manage the top-menu for FCOO web applications
         },
         {
             id:'load',
-            create  : function( $menu/*, elementOptions, menuOptions*/ ){
-                return defaultTopMenuButton($menu, {
+            create  : function( $panel/*, elementOptions, panelOptions*/ ){
+                return defaultTopPanelButton($panel, {
                     icon    : 'fa-folder-open',
                     title   : {da: 'Hent', en: 'Load' },
                     newGroup: true,
@@ -207636,8 +206217,8 @@ Create and manage the top-menu for FCOO web applications
         },
         {
             id:'share',
-            create  : function( $menu/*, elementOptions, menuOptions*/ ){
-                return defaultTopMenuButton($menu, {
+            create  : function( $panel/*, elementOptions, panelOptions*/ ){
+                return defaultTopPanelButton($panel, {
                     icon    : 'fa-share-alt',
                     title   : {da: 'Del', en: 'Share' },
                     newGroup: true,
@@ -207650,10 +206231,10 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'header',
-            create: function( $menu, elementOptions, menuOptions/*, topMenu*/ ){
+            create: function( $panel, elementOptions, panelOptions/*, topPanel*/ ){
                 return $('<div/>')
-                           .addClass('text-nowrap top-menu-item top-menu-header')
-                           .i18n( menuOptions );
+                           .addClass('text-nowrap top-panel-item top-panel-header')
+                           .i18n( panelOptions );
             },
             priority: 8,
             minWidth: 200,
@@ -207663,25 +206244,25 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'search',
-            create: function( $menu, elementOptions, menuOptions, topMenu ){
+            create: function( $panel, elementOptions, panelOptions, topPanel ){
                 var $element =
                     $('<form onsubmit="return false;"/>')
-                        .addClass('form-inline top-menu-item')
-                        .appendTo($menu),
+                        .addClass('form-inline top-panel-item')
+                        .appendTo($panel),
                     $inputGroup =
                         $('<div/>')
                             .addClass('input-group p-0')
                             .appendTo($element);
 
-                topMenu.searchInput =
+                topPanel.searchInput =
 
                     $('<input type="text" class="form-control"></div>')
                         .toggleClass('form-control-sm', !window.bsIsTouch) //TODO - Skal rettes, når form er implementeret i jquery-bootstram
                         .i18n({da:'Søg...', en:'Search...'}, 'placeholder')
                         .appendTo( $inputGroup );
 
-                topMenu.searchButton =
-                    defaultTopMenuButton($menu, { icon: $.FONTAWESOME_PREFIX_STANDARD + ' fa-search' })
+                topPanel.searchButton =
+                    defaultTopPanelButton($panel, { icon: $.FONTAWESOME_PREFIX_STANDARD + ' fa-search' })
                         .appendTo( $inputGroup );
 
                 return $element;
@@ -207696,13 +206277,13 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'warning',
-            create: function( $menu, elementOptions, menuOptions/*, topMenu*/ ){
+            create: function( $panel, elementOptions, panelOptions/*, topPanel*/ ){
                 //Create yellow warning square by overlaying two icons
                 var iconClass = 'fa-exclamation-square';
-                var $result = messageGroupTopMenuButton($menu, $.FONTAWESOME_PREFIX_STANDARD + ' ' + iconClass, ['fas text-warning ' + iconClass, 'far '+iconClass] );
+                var $result = messageGroupTopPanelButton($panel, $.FONTAWESOME_PREFIX_STANDARD + ' ' + iconClass, ['fas text-warning ' + iconClass, 'far '+iconClass] );
 
                 //Create message-group with warnings
-                ns.createFCOOMessageGroup( 'warning', menuOptions, $result );
+                ns.createFCOOMessageGroup( 'warning', panelOptions, $result );
                 return $result;
             },
             priority : 1,
@@ -207712,10 +206293,10 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'messages',
-            create: function( $menu, elementOptions, menuOptions ){
-                var $result = messageGroupTopMenuButton($menu, $.FONTAWESOME_PREFIX_STANDARD + ' fa-envelope', 'fas fa-envelope');
+            create: function( $panel, elementOptions, panelOptions ){
+                var $result = messageGroupTopPanelButton($panel, $.FONTAWESOME_PREFIX_STANDARD + ' fa-envelope', 'fas fa-envelope');
                 //Create message-group with info
-                ns.createFCOOMessageGroup( 'info', menuOptions, $result );
+                ns.createFCOOMessageGroup( 'info', panelOptions, $result );
                 return $result;
             },
             priority : 2,
@@ -207725,8 +206306,8 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'preSetting',
-            create: function( $menu, elementOptions, menuOptions ){
-                return defaultTopMenuButton($menu, menuOptions);
+            create: function( $panel, elementOptions, panelOptions ){
+                return defaultTopPanelButton($panel, panelOptions);
             },
             priority : 2,
             rightSide: true
@@ -207734,8 +206315,8 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'setting',
-            create: function( $menu/*, elementOptions, menuOptions */){
-                var $result = defaultTopMenuButton($menu, {
+            create: function( $panel/*, elementOptions, panelOptions */){
+                var $result = defaultTopPanelButton($panel, {
                         icon   : $.FONTAWESOME_PREFIX_STANDARD + ' fa-cog',
                         onClick: function(){ ns.globalSetting.edit(); }
                     });
@@ -207747,8 +206328,8 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'postSetting',
-            create: function( $menu, elementOptions, menuOptions ){
-                return defaultTopMenuButton($menu, menuOptions);
+            create: function( $panel, elementOptions, panelOptions ){
+                return defaultTopPanelButton($panel, panelOptions);
             },
             priority : 2,
             rightSide: true
@@ -207756,11 +206337,11 @@ Create and manage the top-menu for FCOO web applications
         //***************************************************************
         {
             id: 'help',
-            create: function( $menu, elementOptions, menuOptions ){
-                var $result = defaultTopMenuButton($menu, {icon: $.FONTAWESOME_PREFIX_STANDARD + ' fa-question-circle'});
+            create: function( $panel, elementOptions, panelOptions ){
+                var $result = defaultTopPanelButton($panel, {icon: $.FONTAWESOME_PREFIX_STANDARD + ' fa-question-circle'});
 
                 //Create message-group with help
-                ns.createFCOOMessageGroup( 'help', menuOptions, $result );
+                ns.createFCOOMessageGroup( 'help', panelOptions, $result );
                 return $result;
             },
             priority : 4,
@@ -207769,22 +206350,22 @@ Create and manage the top-menu for FCOO web applications
 
         //***************************************************************
         {
-            id       : 'rightMenu',
+            id       : 'rightPanel',
             priority : 0,
             rightSide: true,
-            create   : createOpenMenuButton
+            create   : createOpenPanelButton
         }
 
     ].map( function( options ){
         return $.extend({}, {
             //Default options
-            create          : defaultTopMenuButton,
+            create          : defaultTopPanelButton,
             addToElementList: defaultAddToElementList,
             priority        : 0,
         } ,options);
     });
 
-    var topMenuPrototype = {
+    var topPanelPrototype = {
         /*****************************************************************
         calculateElementSize = function()
         Calculate the total width of the elements for each of the priority
@@ -207820,7 +206401,7 @@ Create and manage the top-menu for FCOO web applications
 
         /*****************************************************************
         onResize = function()
-        Called on topMenu-object when the size of the container is changed
+        Called on topPanel-object when the size of the container is changed
         Recalculate and adjust the number of visible elements
         ******************************************************************/
         onResize: function(){
@@ -207837,19 +206418,19 @@ Create and manage the top-menu for FCOO web applications
             $.each( this.elementList, function(index, elementInfo){
                 var show = (elementInfo.priority <= maxPriority);
                 elementInfo.$element
-                    .toggleClass('top-menu-element-show', show)
-                    .toggleClass('top-menu-element-hide', !show);
+                    .toggleClass('top-panel-element-show', show)
+                    .toggleClass('top-panel-element-hide', !show);
             });
         }
     };
 
     /*****************************************************************
-    createTopMenu = function( options )
-    Create the top menu and return a object with the created element
+    createTopPanel = function( options )
+    Create the top panel and return a object with the created element
     ******************************************************************/
-    ns.createTopMenu = function( options ){
+    ns.createTopPanel = function( options ){
         options = $.extend({}, {
-            leftMenu   : false,
+            leftPanel   : false,
             logo       : true,
             header     : $.extend({}, ns.applicationHeader),
             messages   : null,
@@ -207859,7 +206440,7 @@ Create and manage the top-menu for FCOO web applications
             setting    : true,
             postSetting: false, //or {icon, onClick}
             help       : null,
-            rightMenu  : false
+            rightPanel  : false
         }, options );
 
         //Extend header with ns.applicationBranch (if any)
@@ -207871,7 +206452,7 @@ Create and manage the top-menu for FCOO web applications
         var result = {
                 elementsWidthFound: false
             };
-        $.extend(result, topMenuPrototype);
+        $.extend(result, topPanelPrototype);
 
         /*
         elementList = []{$element, width, priority}
@@ -207881,28 +206462,28 @@ Create and manage the top-menu for FCOO web applications
         */
         var elementList = result.elementList = [];
 
-        //Container for all elements used in top-menu
+        //Container for all elements used in top-panel
         var $container = result.$container =
                 $('<div/>')
-                    .addClass("top-menu-container")
-                    .addClass( $._bsGetSizeClass({baseClass: 'top-menu-container', useTouchSize: true}) );
+                    .addClass("top-panel-container")
+                    .addClass( $._bsGetSizeClass({baseClass: 'top-panel-container', useTouchSize: true}) );
 
-        //Create the menu-bar
-        var $menu = result.$menu = $('<nav/>')
-                .addClass("d-flex justify-content-start align-items-center flex-nowrap top-menu fcoo-app-bg-color fcoo-app-text-color btn-fcoo-app-color")
+        //Create the panel-bar
+        var $panel = result.$panel = $('<nav/>')
+                .addClass("d-flex justify-content-start align-items-center flex-nowrap top-panel fcoo-app-bg-color fcoo-app-text-color btn-fcoo-app-color")
                 .prependTo( $container );
 
-        //Adding buttons etc to the top-menu - Order of buttons/logo are given by topMenuElementList
+        //Adding buttons etc to the top-panel - Order of buttons/logo are given by topPanelElementList
         var firstRightSideFound = false;
-        topMenuElementList.forEach( elementOptions => {
-            let menuOptions = options[elementOptions.id];
-            if (!menuOptions)
+        topPanelElementList.forEach( elementOptions => {
+            let panelOptions = options[elementOptions.id];
+            if (!panelOptions)
                 return true;
 
-            var $element = elementOptions.create( $menu, elementOptions, menuOptions, result );
+            var $element = elementOptions.create( $panel, elementOptions, panelOptions, result );
             if ($element){
                 result[elementOptions.id] = $element;
-                $element.appendTo( $menu );
+                $element.appendTo( $panel );
                 if ((!firstRightSideFound) && elementOptions.rightSide){
                     $element.addClass('right-side');
                     firstRightSideFound = true;
@@ -207920,7 +206501,7 @@ Create and manage the top-menu for FCOO web applications
         onResizeFunc();
 
         return result;
-    }; //end of createTopMenu
+    }; //end of createTopPanel
 }(jQuery, this, document));
 ;
 /****************************************************************************
@@ -207938,7 +206519,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
 
     var maxMaskOpacity = 0.5; //Equal $modal-backdrop-opacity in \bower_components\bootstrap\scss\_variables.scss
 
-    ns.TouchMenu = function (options) {
+    ns.TouchPanel = ns.TouchMenu = function (options) {
         this._onOpen = [];
         this._onClose = [];
         this.isOpen = false;
@@ -207950,15 +206531,15 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
             scrollOptions: null,   //Individuel options for jquery-scroll-container
             modeOver     : false,
             multiMode    : false,
-            menuClassName: '',
+            panelClassName: '',
 
             isOpen       : false,
             sizeList     : [], //List of different size' of content = []SIZEOPTIONS SIZEOPTIONS = {width:NUMBER, modernizr: STRING} modernizr = name of a monernizr-test to be set when the size is set. OR []NUMBER (height/width) OR []STRING (modernizr-test)
             sizeIndex    : -1,
-            onSetSize    : function( /* sizeIndex, menu */ ){},
+            onSetSize    : function( /* sizeIndex, panel */ ){},
 
-            //$menu        : $-element with content (must be inside a <div>), or
-            //content      : object with options to create content using $.fn._bsAddHtml
+            //$content     : $-element with content (must be inside a <div>), or
+            //content      : object with options to create content using $.fn._bsAddHtml, or
             //createContent: function($container) = function to create the content in $container
 
             handleClassName    : '',
@@ -207967,17 +206548,17 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
             toggleOnHandleClick: false,
             hideHandleWhenOpen : false,
 
-            $neighbourContainer: null,  //$-container that gets resized when the touch-menu is opened/closed
+            $neighbourContainer: null,  //$-container that gets resized when the touch-panel is opened/closed
 
         }, options || {} );
 
         this.main = this.options.main;
 
-        this.options.verticalMenu    = (this.options.position == 'left') || (this.options.position == 'right');
-        this.options.scroll          = this.options.scroll || (this.options.verticalMenu && !this.options.menuOptions);
+        this.options.verticalPanel    = (this.options.position == 'left') || (this.options.position == 'right');
+        this.options.scroll          = this.options.scroll || (this.options.verticalPanel && !this.options.menuOptions);
         this.options.directionFactor = (this.options.position == 'left') || (this.options.position == 'top') ? 1 : -1;
 
-        if (this.options.verticalMenu){
+        if (this.options.verticalPanel){
             this.options.openDirection  = this.options.position == 'left' ? 'right' : 'left';
             this.options.closeDirection = this.options.position;
         }
@@ -207989,13 +206570,13 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
         if (this.options.$neighbourContainer)
             this.options.$neighbourContainer.addClass('neighbour-container');
 
-        //Initialize the menu
+        //Initialize the panel
         this.$container = this.options.$container ? this.options.$container : $('<div/>');
         this.$container
-            .addClass('touch-menu-container')
-            .addClass( $._bsGetSizeClass({baseClass: 'touch-menu-container', useTouchSize: true}) )
+            .addClass('touch-panel-container')
+            .addClass( $._bsGetSizeClass({baseClass: 'touch-panel-container', useTouchSize: true}) )
             .addClass(this.options.position)
-            .addClass(this.options.menuClassName);
+            .addClass(this.options.panelClassName);
 
         //Adjust sizeList (if any)
         if (this.options.sizeList.length){
@@ -208010,63 +206591,63 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
                     }
                 sizeOptions.dimention = sizeOptions.dimention || sizeOptions.width || sizeOptions.height || ' ';
             });
-            this.options[ this.options.verticalMenu ? 'width' : 'height' ] = defaultSize;
+            this.options[ this.options.verticalPanel ? 'width' : 'height' ] = defaultSize;
         }
 
         //If the dimention is 'auto' add on-resize event to update width/height
-        if (this.options[ this.options.verticalMenu ? 'width' : 'height' ] == 'auto'){
+        if (this.options[ this.options.verticalPanel ? 'width' : 'height' ] == 'auto'){
             this.$container
-                .addClass(this.options.verticalMenu ? 'vertical-auto-width' : 'horizontal-auto-height')
+                .addClass(this.options.verticalPanel ? 'vertical-auto-width' : 'horizontal-auto-height')
                 .resize( $.proxy( this.onResize, this) );
         }
 
         this.setMode( this.options.modeOver );
 
         //Create container for the contents
-        if (this.options.$preMenu || this.options.inclPreMenu || this.options.preMenuClassName || this.options.$postMenu || this.options.inclPostMenu || this.options.postMenuClassName){
+        if (this.options.$prePanel || this.options.inclPrePanel || this.options.prePanelClassName || this.options.$postPanel || this.options.inclPostPanel || this.options.postPanelClassName){
 
             //Change container to flex-display
             this.$container.addClass('d-flex');
-            this.$container.addClass(this.options.verticalMenu ? 'flex-column' : 'flex-row');
+            this.$container.addClass(this.options.verticalPanel ? 'flex-column' : 'flex-row');
 
-            if (this.options.$preMenu || this.options.inclPreMenu || this.options.preMenuClassName){
-                this.$preMenu = this.options.$preMenu ? this.options.$preMenu : $('<div/>');
-                this.$preMenu
-                    .addClass('touch-pre-menu flex-shrink-0')
-                    .addClass(this.options.preMenuClassName)
+            if (this.options.$prePanel || this.options.inclPrePanel || this.options.prePanelClassName){
+                this.$prePanel = this.options.$prePanel ? this.options.$prePanel : $('<div/>');
+                this.$prePanel
+                    .addClass('touch-pre-panel flex-shrink-0')
+                    .addClass(this.options.prePanelClassName)
                     .appendTo(this.$container);
             }
 
-            var $menuContainer = $('<div/>')
-                .addClass('touch-menu flex-grow-1 flex-shrink-1')
+            var $panelContainer = $('<div/>')
+                .addClass('touch-panel flex-grow-1 flex-shrink-1')
                 .appendTo(this.$container);
 
                 if (this.options.scroll)
-                    this.$menu = $menuContainer.addScrollbar( this.options.scrollOptions );
+                    this.$content = $panelContainer.addScrollbar( this.options.scrollOptions );
                 else
-                    this.$menu = $menuContainer;
+                    this.$content = $panelContainer;
 
             //Create the bottom/right part
-            if (this.options.$postMenu || this.options.inclPostMenu || this.options.postMenuClassName){
-                this.$postMenu = this.options.$postMenu ? this.options.$postMenu : $('<div/>');
-                this.$postMenu
-                    .addClass('touch-post-menu flex-shrink-0')
-                    .addClass(this.options.postMenuClassName)
+            if (this.options.$postPanel || this.options.inclPostPanel || this.options.postPanelClassName){
+                this.$postPanel = this.options.$postPanel ? this.options.$postPanel : $('<div/>');
+                this.$postPanel
+                    .addClass('touch-post-panel flex-shrink-0')
+                    .addClass(this.options.postPanelClassName)
                     .appendTo(this.$container);
             }
         }
         else
-            this.$menu = this.$container;
+            this.$content = this.$container;
 
-        //Move or create any content into the menu
-        if (this.options.$menu)
-            this.options.$menu.contents().detach().appendTo(this.$menu);
+        //Move or create any content into the panel
+        if (this.options.$content || this.options.$menu) //$menu for backward combability
+            (this.options.$content || this.options.$menu).contents().detach().appendTo(this.$content);
         else
             if (this.options.content)
-                this.$menu._bsAddHtml(this.options.content);
+                this.$content._bsAddHtml(this.options.content);
             else
                 if (this.options.createContent)
-                    this.options.createContent(this.$menu);
+                    this.options.createContent(this.$content);
 
 
         if (window.bsIsTouch)
@@ -208087,7 +206668,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
         if (window.bsIsTouch || this.options.allwaysHandle || this.options.toggleOnHandleClick){
             this.$handle = this.options.$handle ? this.options.$handle : $('<div/>');
             this.$handle
-                .addClass('touch-menu-handle')
+                .addClass('touch-panel-handle')
                 .toggleClass(this.options.position, !!this.options.$handleContainer)
                 .addClass(this.options.handleClassName)
                 .toggleClass('hide-when-open', this.options.hideHandleWhenOpen)
@@ -208095,21 +206676,21 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
                 .appendTo(this.options.$handleContainer ? this.options.$handleContainer : this.$container);
 
             if (this.options.$handleContainer)
-                //Add events on handle outside the menu
+                //Add events on handle outside the panel
                 this._add_swiped(this.$handle);
 
             if (this.options.toggleOnHandleClick)
                 this.$handle.on('click', $.proxy(this.toggle, this));
         }
 
-        //Update dimention and size of the menu and handle
+        //Update dimention and size of the panel and handle
         this.updateDimentionAndSize();
 
         //Create the mask
         if (this.options.modeOver || this.options.multiMode) {
             this.$mask =
                 $('<div/>')
-                .addClass('touch-menu-mask')
+                .addClass('touch-panel-mask')
                 .appendTo('body');
 
             if (window.bsIsTouch)
@@ -208124,11 +206705,11 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
         //Create the $.bsMenu if menuOptions are given
         if (this.options.menuOptions){
             this.options.menuOptions.resetListPrepend = this.options.resetListPrepend || this.options.menuOptions.resetListPrepend;
-            this.mmenu = ns.createMmenu(this.options.position, this.options.menuOptions, this.$menu);
+            this.mmenu = ns.createMmenu(this.options.position, this.options.menuOptions, this.$content);
         }
 
         //Add the open/close status to appSetting
-        this.settingId = this.options.position + '-menu-open';
+        this.settingId = this.options.position + '-panel-open';
         ns.appSetting.add({
             id          : this.settingId,
             applyFunc   : this._setOpenCloseFromSetting.bind(this),
@@ -208137,7 +206718,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
         });
 
         //Add the size state to appSetting
-        this.sizeId = this.options.position + '-menu-size';
+        this.sizeId = this.options.position + '-panel-size';
         ns.appSetting.add({
             id          : this.sizeId,
             applyFunc   : this._setSizeIndex.bind(this),
@@ -208155,7 +206736,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
     /******************************************
     Extend the prototype
     ******************************************/
-    ns.TouchMenu.prototype = {
+    ns.TouchPanel.prototype = ns.TouchMenu.prototype = {
         _add_swiped: function($element){
             this._this_incSize = this._this_incSize || $.proxy(this.incSize,  this);
             this._this_decSize = this._this_decSize || $.proxy(this.decSize, this);
@@ -208170,8 +206751,8 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
 
             if (this.doNotCallOnResize) return;
 
-            var dim = this.options.verticalMenu ? this.$container.outerWidth() : this.$container.outerHeight();
-            this.options[this.options.verticalMenu ? 'width' : 'height'] = dim;
+            var dim = this.options.verticalPanel ? this.$container.outerWidth() : this.$container.outerHeight();
+            this.options[this.options.verticalPanel ? 'width' : 'height'] = dim;
 
             this.updateDimentionAndSize();
 
@@ -208182,8 +206763,8 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
 
         updateDimentionAndSize: function(){
             var _this = this,
-                cssDimensionId = this.options.verticalMenu ? 'height' : 'width',
-                cssPosId       = this.options.verticalMenu ? 'top'    : 'left',
+                cssDimensionId = this.options.verticalPanel ? 'height' : 'width',
+                cssPosId       = this.options.verticalPanel ? 'top'    : 'left',
                 cssPositionId;
             switch (this.options.position){
                 case 'left'  : cssPositionId = 'right';  break;
@@ -208195,7 +206776,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
             //*********************************************************************
             function getDimensionAndSize( width, height, defaultSize ){
                 var result =
-                    _this.options.verticalMenu ? {
+                    _this.options.verticalPanel ? {
                         dimension: height || 0,
                         size     : width  || defaultSize
                     } : {
@@ -208207,35 +206788,35 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
             }
             //*********************************************************************
             function setElementDimensionAndSize( $elem, options ){
-                //Set width (top/bottom) or height (left/right) of menu and center if not 100%
+                //Set width (top/bottom) or height (left/right) of panel and center if not 100%
                 if (options.dimension)
                     $elem
                         .css(cssDimensionId, options.dimension + 'px')
                         .css(cssPosId, '50%')
-                        .css(_this.options.verticalMenu ? 'margin-top' : 'margin-left', -1*options.halfDimension);
+                        .css(_this.options.verticalPanel ? 'margin-top' : 'margin-left', -1*options.halfDimension);
                 else
                     $elem
                         .css(cssDimensionId, '100%')
                         .css(cssPosId,   '0px');
 
-                $elem.css(_this.options.verticalMenu ? 'width' : 'height', options.size);
+                $elem.css(_this.options.verticalPanel ? 'width' : 'height', options.size);
                 return $elem;
             }
             //*********************************************************************
 
-            this.options.menuDimAndSize   = getDimensionAndSize( this.options.width,       this.options.height,       280 );
+            this.options.panelDimAndSize  = getDimensionAndSize( this.options.width,       this.options.height,       282 );
             this.options.handleDimAndSize = getDimensionAndSize( this.options.handleWidth, this.options.handleHeight,  20 );
 
-            //Update the menu-element
-            this.$container.css(this.options.position, -1*this.options.menuDimAndSize.size + 'px');
+            //Update the panel-element
+            this.$container.css(this.options.position, -1*this.options.panelDimAndSize.size + 'px');
 
-            //Set width (top/bottom) or height (left/right) of menu and center if not 100%
-            setElementDimensionAndSize(this.$container, this.options.menuDimAndSize);
+            //Set width (top/bottom) or height (left/right) of panel and center if not 100%
+            setElementDimensionAndSize(this.$container, this.options.panelDimAndSize);
             if (this.$handle){
                 if (!this.options.$handleContainer)
                     this.$handle.css(cssPositionId, -1 * (this.options.handleOffsetFactor || 1) * this.options.handleDimAndSize.size + 'px');
 
-                //Set width (top/bottom) or height (left/right) of menu and center if not 100%
+                //Set width (top/bottom) or height (left/right) of panel and center if not 100%
                 setElementDimensionAndSize(this.$handle, this.options.handleDimAndSize);
             }
         },
@@ -208267,12 +206848,20 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
         },
 
         animateToPosition: function (pos, animateMain, noAnimation) {
+
             this.$container.toggleClass('no-animation', !!noAnimation);
 
-            if (this.options.verticalMenu)
-                this.$container.css('transform', 'translate3d(' + this.options.directionFactor*pos + 'px, 0, 0)');
-            else
-                this.$container.css('transform', 'translate3d(0, ' + this.options.directionFactor*pos + 'px, 0)');
+            let truePos = this.options.directionFactor*pos;
+            if (this.options.verticalPanel){
+                this.$container.css('transform', 'translate3d(' + truePos + 'px, 0, 0)');
+                this.$container.css('width', pos + 'px');
+                this.$container.css(this.options.position, -pos + 'px');
+            }
+            else {
+                this.$container.css('transform', 'translate3d(0, ' + truePos + 'px, 0)');
+                this.$container.css('height', pos + 'px');
+                this.$container.css(this.options.position, -pos + 'px');
+            }
 
             this.changeNeighbourContainerPos(pos, animateMain && !noAnimation);
         },
@@ -208284,8 +206873,8 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
                     .css('margin-'+this.options.position, Math.max(0,pos)+'px');
         },
 
-        setMaskOpacity: function (newMenuPos) {
-            this._setMaskOpacity( parseFloat((newMenuPos / this.options.menuDimAndSize.size) * maxMaskOpacity) );
+        setMaskOpacity: function (newPanelPos) {
+            this._setMaskOpacity( parseFloat((newPanelPos / this.options.panelDimAndSize.size) * maxMaskOpacity) );
         },
 
         _setMaskOpacity: function (opacity) {
@@ -208355,10 +206944,10 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
             if ((sizeIndex < 0) || (sizeIndex >= this.options.sizeList.length))
                 return this;
 
-            const vertical = this.options.verticalMenu;
+            const vertical = this.options.verticalPanel;
             let originalDim,
                 sizeOptions = this.options.sizeList[sizeIndex],
-                //animateByJS = true if the different sizes of the menu is given by the content instead of direct dimention
+                //animateByJS = true if the different sizes of the panel is given by the content instead of direct dimention
                 animateByJS = (sizeIndex != this.options.sizeIndex) && (sizeOptions.dimention == 'auto') && this.isOpen && false;
 
             this.options.sizeIndex = sizeIndex;
@@ -208421,7 +207010,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
             this.$container.addClass('opened').removeClass('opening closing closed');
             this._copyClassName();
 
-            this.animateToPosition(this.options.menuDimAndSize.size, true, noAnimation);
+            this.animateToPosition(this.options.panelDimAndSize.size, true, noAnimation);
 
             this.isOpen = true;
 
@@ -208432,7 +207021,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
                 func(_this);
             });
 
-            window.modernizrOn(this.options.position +'-menu-open');
+            window.modernizrOn(this.options.position +'-panel-open');
 
             this._invoke(this.options.onOpen);
 
@@ -208454,7 +207043,7 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
 
             this._onClose.forEach(func => func(this), this);
 
-            window.modernizrOff(this.options.position +'-menu-open');
+            window.modernizrOff(this.options.position +'-panel-open');
 
             this._invoke(this.options.onClose);
 
@@ -208477,8 +207066,8 @@ Is adjusted fork of Touch-Menu-Like-Android (https://github.com/ericktatsui/Touc
         }
     };
 
-    ns.touchMenu = function(options){
-        return new ns.TouchMenu(options);
+    ns.touchPanel = ns.touchMenu = function(options){
+        return new ns.TouchPanel(options);
     };
 
 }(jQuery, this, document));
@@ -209904,12 +208493,12 @@ Methods for loading and saving settings for the application
             ns.globalSetting.set(ns.standardSettingId, code);
 
             let displatEditCode = ns.ss_db2displayFormat(code),
-                settingMenuDiv_da = '<div><i class="fal fa-cog"></i>&nbsp;Indstillinger&nbsp;' + '<i class="fas fa-caret-right"></i></i>&nbsp;<i class="fal ' + ns.standardSettingHeader.icon+'"></i>&nbsp;'+ns.standardSettingHeader.text.da+'</div>',
-                settingMenuDiv_en = '<div><i class="fal fa-cog"></i>&nbsp;Settingsr&nbsp;'+      '<i class="fas fa-caret-right"></i></i>&nbsp;<i class="fal ' + ns.standardSettingHeader.icon+'"></i>&nbsp;'+ns.standardSettingHeader.text.en+'</div>';
+                settingPanelDiv_da = '<div><i class="fal fa-cog"></i>&nbsp;Indstillinger&nbsp;' + '<i class="fas fa-caret-right"></i></i>&nbsp;<i class="fal ' + ns.standardSettingHeader.icon+'"></i>&nbsp;'+ns.standardSettingHeader.text.da+'</div>',
+                settingPanelDiv_en = '<div><i class="fal fa-cog"></i>&nbsp;Settingsr&nbsp;'+      '<i class="fas fa-caret-right"></i></i>&nbsp;<i class="fal ' + ns.standardSettingHeader.icon+'"></i>&nbsp;'+ns.standardSettingHeader.text.en+'</div>';
 
             let noty = window.notyInfo({
-                da: 'Opsætning med id <em>'+displatEditCode+'</em> er angivet som Standard Opsætning, og den bruges om udgangspunkt, når '+ ns.ss_getAppName('da', true)+ ' starter<br>&nbsp;<br>Standard Opsætning kan ændres under<br>' + settingMenuDiv_da,
-                en: 'Setting with <em>'+displatEditCode+'</em> is set as Standard Setting and will be used as default when '+ ns.ss_getAppName('en', true) +' starts<br>&nbsp;<br>Standard Setting can be set under<br>' + settingMenuDiv_en,
+                da: 'Opsætning med id <em>'+displatEditCode+'</em> er angivet som Standard Opsætning, og den bruges om udgangspunkt, når '+ ns.ss_getAppName('da', true)+ ' starter<br>&nbsp;<br>Standard Opsætning kan ændres under<br>' + settingPanelDiv_da,
+                en: 'Setting with <em>'+displatEditCode+'</em> is set as Standard Setting and will be used as default when '+ ns.ss_getAppName('en', true) +' starts<br>&nbsp;<br>Standard Setting can be set under<br>' + settingPanelDiv_en,
             },{
                 layout   : 'center',
                 textAlign: 'center',
@@ -226575,7 +225164,7 @@ Options for selectiong position-format and to activate context-menu
             tooltipDirection: 'top',
 
             content     : {
-                semiTransparent    : false,
+                //semiTransparent    : false,
                 clickable          : true,
                 noHeader           : true,
                 noVerticalPadding  : true,
@@ -226687,10 +225276,10 @@ Options for selectiong position-format and to activate context-menu
             var cursorOptions = {
                     insideFormGroup  : true,
                     noValidation     : true,
-                    noBorder         : true,
+                    noBorder         : false, //true,
                     noVerticalPadding: true,
                     noPadding        : true,
-                    type             : 'textbox',
+                    type             : 'text', //'textbox',
 
                     text           : function( $inner ){ $inner.addClass('cursor'); },
                     class          :'show-for-control-position-cursor',
@@ -226698,13 +225287,13 @@ Options for selectiong position-format and to activate context-menu
                         type  : 'button',
                         square: true,
                         icon  : iconCursorPosition,
-                        transparent: true,
+                        //transparent: true,
                     },
                     after: !this.options.inclContextmenu ? null : {
                         type  :'button',
                         square: true,
                         icon  : L.BsControl.prototype.options.rightClickIcon,
-                        transparent: true,
+                        //transparent: true,
                         onClick: function(){
                             window.notyInfo(
                                 { icon: L.BsControl.prototype.options.rightClickIcon,
@@ -226800,6 +225389,7 @@ Options for selectiong position-format and to activate context-menu
 
                 if (_this.options.inclContextmenu)
                     options.after = options.after || {};
+                
                 return options;
             }
 
@@ -227210,7 +225800,7 @@ Options for selectiong position-format and to activate context-menu
                     text   : '',
                     square : true,
                     class  : 'disabled show-as-normal',
-                    semiTransparent: true
+                    //semiTransparent: true,
                 },
                 after: {
                     type   : 'button',
@@ -227218,7 +225808,7 @@ Options for selectiong position-format and to activate context-menu
                     text   : '',
                     square : true,
                     class  : 'disabled show-as-normal',
-                    semiTransparent: true
+                    //semiTransparent: true,
                 }
             };
 
@@ -230010,11 +228600,12 @@ ctx.fillRect(0, 0, shapeDim, shapeDim);
             LineColorName  : '',  //Same as borderColorName
 
 
-            //fill       : false,  //True to add fill colored by fillColor or SOMETHING ELSE TODO
-            border         : false,  //True to add a semi-transparent white border to the line
-            transparent    : false,  //True to make the line semi-transparent
-            hover          : false,  //True to show big-shadow and 0.9 opacuity for lpl-transparent when hover
-            onlyShowOnHover: false,  //When true the polyline/polygon is only visible on hover and popup-open. Need {shadow: false, hover: true}
+          //fill            : false,  //True to add fill colored by fillColor or SOMETHING ELSE TODO
+            border          : false,  //True to add a semi-transparent white border to the line
+            transparent     : false,  //True to make the line and fill semi-transparent
+            extraTransparent: false,  //True to make the line and fill almost full -transparent
+            hover           : false,  //True to show big-shadow and 0.9 opacuity for lpl-transparent when hover
+            onlyShowOnHover : false,  //When true the polyline/polygon is only visible on hover and popup-open. Need {shadow: false, hover: true}
 
             shadow               : false,  //true to add big shadow to the line
             shadowWhenInteractive: false,  //When true a shadow is shown when the polyline is interactive
@@ -230054,7 +228645,7 @@ ctx.fillRect(0, 0, shapeDim, shapeDim);
                             interactive   : interactive,
                         });
                     result.className = baseClassName + ' ' + (this.options.className || '');
-                    return result;                
+                    return result;
                 }.bind(this);
 
                 options = options || {};
@@ -230141,7 +228732,9 @@ ctx.fillRect(0, 0, shapeDim, shapeDim);
                 this._addClass(thisIndex, (options.baseClassName || '') + ' ' + (options.className || ''));
                 this.setColor(options.colorName);
                 this.setBorderColor(options.borderColorName);
-                this._toggleClass(thisIndex, 'lpl-transparent', !!options.transparent);
+                this._toggleClass(thisIndex, 'lpl-any-transparent',   !!options.transparent || !!options.extraTransparent);
+                this._toggleClass(thisIndex, 'lpl-transparent',       !!options.transparent && !options.extraTransparent);
+                this._toggleClass(thisIndex, 'lpl-extra-transparent', !!options.extraTransparent);
 
                 //Show or hide border
                 this.setBorder( options.border );
@@ -234043,6 +232636,8 @@ NAME  col#1  col#2  col#3  col#4  col#5
 
 
 ;
+/* global define, module, require, window */
+
 (function (factory, window) {
   // define an AMD module that relies on 'leaflet'
   if (typeof define === 'function' && define.amd) {
@@ -234696,7 +233291,7 @@ The default options are an extended version of the defalut application options f
     Extend ns.defaultApplicationOptions with default options for map-application
     ****************************************************************************/
     ns.defaultApplicationOptions = $.extend(true, ns.defaultApplicationOptions, {
-        topMenu: {
+        topPanel: {
             search   : true,                                    //true if use search
             nominatim: 'https://nominatim.openstreetmap.org',   //Path to OpenStreetMap Nominatin-service
 
@@ -234728,7 +233323,7 @@ The default options are an extended version of the defalut application options f
             setting: false,
         },
 
-        standardMenuOptions: {
+        standardPanelOptions: {
             inclBar     : true,
             barCloseAll : true,
 
@@ -234740,8 +233335,8 @@ The default options are an extended version of the defalut application options f
             }
         },
 
-        leftMenu: {
-            width  : 359,   //Width of left-menu. Supports mobil device with screen width = 360+
+        leftPanel: {
+            width  : 359,   //Width of left-panel. Supports mobil device with screen width = 360+
             buttons: {
                 reset  : true,
                 setting: true
@@ -234751,7 +233346,7 @@ The default options are an extended version of the defalut application options f
                 adjustIcon: adjustMenuItemIcon
             },
         },
-        leftMenuIcon: 'fa-layer-group',
+        leftPanelIcon: 'fa-layer-group',
 
         //Default map
         map: {
@@ -235696,7 +234291,7 @@ dataset.js
     /****************************************************************************
     To create an application call window.fcoo.map.createApplication(options, fileNameOrMenuOptions)
     options                = OPTIONS or FILENAME = filename with OPTIONS
-    fileNameOrMenuOptions  = MENU-OPTIONS or FILENAME with menu-options. Default = FCOO Standard menu (see fcoo-applicaion)
+    fileNameOrMenuOptions  = MENU_ITEM_LIST or FILENAME with menu-item-list. Default = FCOO Standard menu (see fcoo-applicaion)
 
     FILENAME = Path to file. Two versions:
         1: Relative path locally e.q. "data/info.json"
@@ -235842,7 +234437,7 @@ dataset.js
 
 
         //Do not create MapLayer with search-results if search is not pressent AND only include search if MapLayer with is included
-        if (!options.topMenu.search)
+        if (!options.topPanel.search)
             delete nsMap.createMapLayer[nsMap.searchMapLayerId];
     }
 
@@ -235863,25 +234458,25 @@ dataset.js
             }
         }
 
-        if (nsMap.setupOptions.standardMenuId)
-            link( nsMap.main[nsMap.setupOptions.standardMenuId].mmenu );
+        if (nsMap.setupOptions.menuPanelId)
+            link( nsMap.main[nsMap.setupOptions.menuPanelId].mmenu );
 
         //Update search-button
-        if (setupOptions.topMenu.search){
-            var topMenuSearchInput = nsMap.main.topMenuObject.searchInput,
+        if (setupOptions.topPanel.search){
+            var topPanelSearchInput = nsMap.main.topPanelObject.searchInput,
                 submitSearch = function(){
-                    topMenuSearchInput.select().focus();
-                    nsMap.search( topMenuSearchInput.val() );
+                    topPanelSearchInput.select().focus();
+                    nsMap.search( topPanelSearchInput.val() );
                 },
                 clickSearch = function(){
                     //If search-input is hidden => show search-input-modal else click == submit
-                    if (topMenuSearchInput.hasClass('top-menu-element-hide'))
+                    if (topPanelSearchInput.hasClass('top-panel-element-hide'))
                         nsMap.search( null );
                     else
                         submitSearch();
                 };
-            nsMap.main.topMenuObject.search.on('submit', submitSearch );
-            nsMap.main.topMenuObject.searchButton.on('click', clickSearch );
+            nsMap.main.topPanelObject.search.on('submit', submitSearch );
+            nsMap.main.topPanelObject.searchButton.on('click', clickSearch );
         }
 
         //Set min- and max-zoom for main-map
@@ -236058,7 +234653,7 @@ global-events.js
 
 ;
 /****************************************************************************
-L.Control.bsToggleBottomMenu.js
+L.Control.bsToggleBottomPanel.js
 ****************************************************************************/
 (function ($, L, window/*, document, undefined*/) {
     "use strict";
@@ -236066,27 +234661,27 @@ L.Control.bsToggleBottomMenu.js
     var ns = window.fcoo = window.fcoo || {},
         nsMap = ns.map = ns.map || {};
 
-        L.Control.BsToggleBottomMenu = L.Control.BsButton.extend({
+        L.Control.BsToggleBottomPanel = L.Control.BsButton.extend({
             options: {
                 bigIcon     : true,
-                icon        : ['far fa-circle-chevron-up hide-for-bottom-menu-open fa-no-margin', 'far fa-circle-chevron-down show-for-bottom-menu-open'],
+                icon        : ['far fa-circle-chevron-up hide-for-bottom-panel-open fa-no-margin', 'far fa-circle-chevron-down show-for-bottom-panel-open'],
                 position    : 'bottomcenter',
                 transparent : true,
                 //semiTransparent : true,
-                onClick     : function(){ nsMap.main.bottomMenu.toggle(); }
+                onClick     : function(){ nsMap.main.bottomPanel.toggle(); }
             }
         });
 
     //Install L.Control.BsCompass
     L.Map.mergeOptions({
-        bsToggleBottomMenuControl: false,
-        bsToggleBottomMenuOptions: {}
+        bsToggleBottomPanelControl: false,
+        bsToggleBottomPanelOptions: {}
     });
 
     L.Map.addInitHook(function () {
-        if (this.options.bsToggleBottomMenuControl){
-            this.bsToggleBottomMenuControl = new L.Control.BsToggleBottomMenu( this.options.bsToggleBottomMenuOptions );
-            this.addControl(this.bsToggleBottomMenuControl);
+        if (this.options.bsToggleBottomPanelControl){
+            this.bsToggleBottomPanelControl = new L.Control.BsToggleBottomPanel( this.options.bsToggleBottomPanelOptions );
+            this.addControl(this.bsToggleBottomPanelControl);
         }
     });
 
@@ -236521,7 +235116,7 @@ that includes current position, and use this other map to get the color
         bbox=-626172.1357121639,8766409.899970293,0,9392582.035682464
 
 
-    https://wms02.fcoo.dk/webmap/v2/data/DMI/HARMONIE/DMI_NEA_MAPS_v005C.nc.wms?
+    https://wms02.fcoo.dk/webmap/v3/data/DMI/HARMONIE/DMI_NEA_MAPS_v005C.nc.wms?
         service=WMS&
         request=GetMap&
         version=1.3.0&
@@ -236566,7 +235161,7 @@ that includes current position, and use this other map to get the color
             staticOptions: {
                 version: '1.1.1'
             },
-            dynamicUrl: "{protocol}//{s}.fcoo.dk/webmap/v2/data/{dataset}.wms",
+            dynamicUrl: "{protocol}//{s}.fcoo.dk/webmap/v3/data/{dataset}.wms",
             dynamicOptions: {
                 updateInterval: 50,
                 transparent   : 'TRUE',
@@ -236644,6 +235239,12 @@ that includes current position, and use this other map to get the color
         service         : STRING ("WMS")
         request         : STRING ("GetMap")
         layers          : STRING,
+
+        dataset     : STRING,
+        styles      : STRING, OBJECT or ARRAY
+        cmap        : STRING,
+
+
         zIndex          : NUMBER
         deltaZIndex     : NUMBER (optional)
         minZoom         : NUMBER (optional)
@@ -236660,6 +235261,9 @@ that includes current position, and use this other map to get the color
                         request         : "GetMap",
                     }, defaultOptions, options );
 
+
+        url              = options.url || url;
+        LayerConstructor = options.LayerConstructor || LayerConstructor;
 
         //Convert layers: []STRING => STRING,STRING and styles = {ID: VALUE} => ID:VALUE;ID:VALUE
         function convertToStr(id, separator){
@@ -236687,19 +235291,22 @@ that includes current position, and use this other map to get the color
 
 
     /***********************************************************
-    layer_static - Creates a L.TileLayer.WMS (layer_wms) with options for static layers
+    layer_wms_static - Creates a L.TileLayer.WMS (layer_wms) with options for static layers
+    Also as layer_static for backward combability
     ***********************************************************/
-    nsMap.layer_static = function(options, map, defaultOptions = nsMap.wmsStatic.options, url = nsMap.wmsStatic.url, LayerConstructor){
+    nsMap.layer_wms_static = nsMap.layer_static = function(options, map, defaultOptions = nsMap.wmsStatic.options, url = nsMap.wmsStatic.url, LayerConstructor){
         return nsMap.layer_wms(options, map, defaultOptions, url, LayerConstructor);
     };
 
 
     /***********************************************************
-    layer_dynamic - Creates a L.TileLayer.WMS (layer_wms) with options for dynamic layers
+    layer_wms_dynamic - Creates a L.TileLayer.WMS (layer_wms) with options for dynamic layers
+    Also as layer_dynamic for backward combability
     ***********************************************************/
-    nsMap.layer_dynamic = function(options, map, defaultOptions = nsMap.wmsDynamic.options, url = nsMap.wmsDynamic.url, LayerConstructor){
+    nsMap.layer_wms_dynamic = nsMap.layer_dynamic = function(options, map, defaultOptions = nsMap.wmsDynamic.options, url = nsMap.wmsDynamic.url, LayerConstructor){
         //Adjust url to include eq. dataset
         url = adjustString(url, options);
+
 
         return nsMap.layer_wms(options, map, defaultOptions, url, LayerConstructor);
     };
@@ -237370,9 +235977,17 @@ Global context-menu for all maps
 
 
 
-
+    //Selct layer
     map_contextmenu_itemList.push({
-        //Map-setting
+        icon       : 'fa-layer-group',
+        text       : {da:'Vælg lag...', en:'Select layers...'},
+        spaceBefore: true,
+        onClick    : (id, latlng, $button, map) => nsMap.selectLayerInModal(map)
+    });
+
+    
+    //Map setting
+    map_contextmenu_itemList.push({
         icon       : ns.icons.mapSettingSingle,
         text       : ns.texts.mapSettingSingle,
         spaceBefore: true,
@@ -237382,6 +235997,7 @@ Global context-menu for all maps
                 nsMap.editMapSetting(map.fcooMapIndex);
         }
     });
+
 
 
     L.Map.addInitHook(function () {
@@ -237435,11 +236051,11 @@ options = {
         useLegendButtonList: BOOLEAN, if true and menuOptions.buttonList is not given => use legendOptions.buttonList as in menu
 
         showAllways        : BOOLOAN. When true the buttons are visible even when the layer is not visible in any maps. Can also be set directly in buttonOptions
-        buttonListMode     : {button-id: MODE} or MODE. When useLegendButtonList = true => 
+        buttonListMode     : {button-id: MODE} or MODE. When useLegendButtonList = true =>
                                 buttonListMode[id]/buttonListMode = "allMaps", "selectedMaps", "mainMap", or "noMaps" (default)
                                 The mode sets witch maps to be called with the onClick-method for the legend-button-list
                                 The mode can also be set direct in the options for the button in buttonList as options.menuButtonMode
-        
+
     },
 
     //Legend
@@ -237680,12 +236296,12 @@ L.Layer.addInitHook(function(){
 
         this.info = []; //[] of {map, layer, legend, infoBox, colorInfoLayer, loading, timeout, updateColorInfoOnWorkingOff, dataset}
 
-        this.showAndHideClasses = '';
-        this.inversShowAndHideClasses = '';
+        this.showAndHideClasses = 'show-for-layer-visible';
+        this.inversShowAndHideClasses = 'hide-for-layer-visible';
         var minZoom = this.options.minZoom || this.options.layerOptions.minZoom || 0;
         if (minZoom){
-            this.showAndHideClasses       = 'show-for-leaflet-zoom-'+minZoom+'-up';
-            this.inversShowAndHideClasses = 'hide-for-leaflet-zoom-'+minZoom+'-up';
+            this.showAndHideClasses       += ' show-for-leaflet-zoom-'+minZoom+'-up';
+            this.inversShowAndHideClasses += ' hide-for-leaflet-zoom-'+minZoom+'-up';
         }
 
         var maxZoom = this.options.maxZoom || this.options.layerOptions.maxZoom || 0;
@@ -237706,6 +236322,64 @@ L.Layer.addInitHook(function(){
     nsMap.MapLayer = MapLayer;
 
     nsMap.MapLayer.prototype = {
+
+        /*********************************************************
+        getInfo: function(mapOrMapIndexOrMapId)
+        Return the info-record for the given map
+        *********************************************************/
+        getInfo: function(mapOrMapIndexOrMapId){
+            let map = nsMap.getMap(mapOrMapIndexOrMapId),
+                index = map ? map.fcooMapIndex : null;
+
+            return index === null ? null : this.info[index];
+        },
+
+
+        /*********************************************************
+        isInvisible: function(mapOrMapIndexOrMapId)
+        Return true if the layer is hidden in the given map
+        *********************************************************/
+        isInvisible: function(mapOrMapIndexOrMapId){
+            let info = this.getInfo(mapOrMapIndexOrMapId);
+            return info && info.isInvisible;
+        },
+
+        /*********************************************************
+        visible, invisible, toggleVisibility: Hide/show the layer in the given map
+        *********************************************************/
+        visible  : function(mapOrMapIndexOrMapId){ return this.toggleVisibility(mapOrMapIndexOrMapId, true);  },
+        invisible: function(mapOrMapIndexOrMapId){ return this.toggleVisibility(mapOrMapIndexOrMapId, false);  },
+        toggleVisibility: function(mapOrMapIndexOrMapId, visible){
+            function set(layer){
+                if (!layer)
+                    return;
+
+                if (layer.setOpacity)
+                    layer.setOpacity(visible ? 1 : 0);
+
+                if (layer.getElement)
+                    $(layer.getElement()).toggle(visible);
+
+                if (layer.eachLayer)
+                    layer.eachLayer( set );
+            }
+
+            let info = this.getInfo(mapOrMapIndexOrMapId);
+            if (info){
+                visible = typeof visible == 'boolean' ? visible : !!info.isInvisible;
+
+                if (!!info.isInvisible == !!visible){
+                    info.isInvisible = !visible;
+
+                    set(info.layer);
+
+                    info.legend.$modalContent.modernizrToggle('layer-visible', visible);
+
+                    this._saveSetting();
+                }
+            }
+        },
+
         /*********************************************************
         isAddedTo(mapOrIndex) - return true if the MapLayer is added to the map
         *********************************************************/
@@ -237739,7 +236413,10 @@ L.Layer.addInitHook(function(){
                 else
                     this.removeFrom(map);
 
-                //colorInfo - TODO
+                if (setting.isInvisible)
+                    this.invisible(mapIndex);
+
+                //colorInfo - @TODO
 
                 //Individual setting
                 this.applySetting(setting, map, this.info[mapIndex], mapIndex);
@@ -237765,8 +236442,9 @@ L.Layer.addInitHook(function(){
             $.each(this.info, function(index, info){
                 data[index] =
                     $.extend({
-                        show: this.isAddedToMap(index)
-                        //colorInfo - TODO
+                        show       : this.isAddedToMap(index),
+                        isInvisible: info ? info.isInvisible : false,
+                        //colorInfo - @TODO
                     },
                         this.saveSetting(info ? info.map : null, info, index) || {}
                     );
@@ -237793,7 +236471,6 @@ L.Layer.addInitHook(function(){
 
             var info = this.info[mapIndex] = {};
             info.map = map;
-
 
             //Create dataset
             if (this.options.dataset && !info.dataset){
@@ -237837,7 +236514,7 @@ L.Layer.addInitHook(function(){
                     }
 
                     legendOptions = $.extend(true, {}, {
-                        index       : parseInt(indexAsStr), 
+                        index       : parseInt(indexAsStr),
                         icon        : this.options.legendIcon || this.options.icon,
                         iconClass   : this.options.legendIconClass || this.options.iconClass || null,
                         text        : this.options.legendText || this.options.text || null,
@@ -237968,8 +236645,9 @@ L.Layer.addInitHook(function(){
                         info.dataset ? info.dataset.data || {} : {}
                     );
 
-                info.layer = this.createLayer(newLayerOptions, map);
+                info.layer = this._createLayer(newLayerOptions, map);
                 info.layer.fcooMapIndex = map.fcooMapIndex; //Prevent the index when the layer is removed => layer._map is set to null
+                info.layer.mapLayer = this;
 
                 //Sets options._popupContainerClass = this.showAndHideClasses to hide open popups when the layer is hidden and visa versa
                 info.layer.options._popupContainerClass = this.showAndHideClasses;
@@ -237978,7 +236656,6 @@ L.Layer.addInitHook(function(){
 
             //Add map to list and layer(s) to map
             layer.addTo(map);
-
             if ( this.hasColorInfo && !info.colorInfoLayer ){
                 this.hasColorInfo = false;
                 //Get the tileLayer used for colorInfo (if any)
@@ -238029,7 +236706,13 @@ L.Layer.addInitHook(function(){
             if (this.options.onAdd)
                 this.options.onAdd(map, layer);
 
+
+            if (info.isInvisible)
+                this.invisible(map);
+
+
             this._saveSetting();
+
 
             return this;
         },
@@ -238228,7 +236911,6 @@ L.Layer.addInitHook(function(){
 
             var info  = this.info[mapIndex];
 
-
             //Remove legned (if any) and use legend.onRemove to do the removing
             if (!this.wasRemovedViaLegend && map.bsLegendControl){
                 map.bsLegendControl.removeLegend(info.legend);
@@ -238356,6 +237038,15 @@ L.Layer.addInitHook(function(){
 
 
         /*********************************************************
+        _createLayer: function(layerOptions, map)
+        Simple calls createLayer.
+        Can be overwriten by different types of MapLayer
+        *********************************************************/
+        _createLayer: function(/*layerOptions, map*/){
+            return this.createLayer.apply(this, arguments);
+        },
+
+        /*********************************************************
         createLayer: function(layerOptions, map)
         Set by the different types of MapLayer
         *********************************************************/
@@ -238415,45 +237106,45 @@ L.Layer.addInitHook(function(){
                 let menuButtonList = [];
                 legendOptions.buttonList.forEach( (buttonOptions, index) => {
                     let menuButtonOptions = $.extend(true, {}, buttonOptions );
-                    
+
                     menuButtonOptions.legendOnClick = menuButtonOptions.onClick;
                     menuButtonOptions.onClick = this._menuButton_onClick.bind(this, index);
-                    
+
                     menuButtonList.push(menuButtonOptions);
-                });                    
+                });
                 result.buttonList = menuButtonList;
-            }            
-            
+            }
+
             if (result.buttonList){
                 //Add class to buttons to control if the button is enabled/disabled when the layer is visible in any maps
                 result.buttonList.forEach( buttonOptions => {
-                    const showAllways = typeof buttonOptions.showAllways !== undefined ? buttonOptions.showAllways : menuOptions.showAllways;
-                    buttonOptions.class = (buttonOptions.class || '') + (showAllways ? '' : ' disabled-when-no-selected'); 
-                }); 
+                    const showAllways = buttonOptions.showAllways !== undefined ? buttonOptions.showAllways : menuOptions.showAllways;
+                    buttonOptions.class = (buttonOptions.class || '') + (showAllways ? '' : ' disabled-when-no-selected');
+                });
             }
-            
+
             return result;
         },
 
         _menuButton_onClick: function(buttonIndex, id, selected, $button/*, map*/){
-            const buttonOptions = this.options && this.options.legendOptions && this.options.legendOptions.buttonList ? this.options.legendOptions.buttonList[buttonIndex] : null;            
-            
-            if (!buttonOptions) 
+            const buttonOptions = this.options && this.options.legendOptions && this.options.legendOptions.buttonList ? this.options.legendOptions.buttonList[buttonIndex] : null;
+
+            if (!buttonOptions)
                 return this;
-                
+
             /*
             buttonListMode: {button-id: MODE}. When useLegendButtonList = true => buttonListMode[id] = "allMaps", "selectedMaps", "mainMap", or "noMaps" (default)
                                                The mode sets witch maps to be called with the onClick-method for the legend-button-list
                                             The mode can also be set direct in the options for the button in buttonList as options.menuButtonMode
-            */                                            
+            */
             const menuOptions = this.options.menuOptions;
 
             let mode = buttonOptions.menuButtonMode;
-            
+
             if (!mode && menuOptions.buttonListMode);
                 mode = Array.isArray(menuOptions.buttonListMode) ? menuOptions.buttonListMode[buttonIndex] : menuOptions.buttonListMode;
             mode = mode || "noMaps";
-            
+
             let mapList = [];
             switch (mode.toUpperCase()){
                 case "ALLMAPS"      :   nsMap.visitAllVisibleMaps( map => mapList.push(map) ); break;
@@ -238466,7 +237157,7 @@ L.Layer.addInitHook(function(){
             mapList.forEach( map => onClick(id, selected, $button, map) );
 
             return this;
-        },                
+        },
 
 
         /******************************************************************
@@ -238498,12 +237189,12 @@ L.Layer.addInitHook(function(){
                 this.menuItem.setState(!!this.isAddedToMap(0));
                 notAdded = !this.isAddedToMap(0);
             }
-            
+
             this.menuItem.$li.toggleClass('not-shown-in-any-maps', !!notAdded);
             this.menuItem.$li.find('.disabled-when-no-selected').toggleClass('disabled', !!notAdded);
             if (this.menuItem.favoriteItem && this.menuItem.favoriteItem.$li)
                 this.menuItem.favoriteItem.$li.find('.disabled-when-no-selected').toggleClass('disabled', !!notAdded);
-            
+
         },
 
         /******************************************************************
@@ -238591,7 +237282,7 @@ layer_wms.js
 Classes to creraet static and dynamic WMS-layers
 
 ****************************************************************************/
-(function ($, L, window/*, document, undefined*/) {
+(function ($, L, window, document, undefined) {
     "use strict";
 
     //Create namespaces
@@ -238605,20 +237296,33 @@ Classes to creraet static and dynamic WMS-layers
         text,
         static      : BOOLEAN
         creatLayer  : FUNCTION - Create the Leaflet-layer
-        layerOptions: OBJECT
-        layers      : STRING,
+        layerOptions: {
+            service     : STRING ("WMS")            (1)
+            request     : STRING ("GetMap")         (1)
+            dataset     : STRING,                   (1)
+            layers      : STRING, OBJECT or ARRAY   (1)
+            styles      : STRING, OBJECT or ARRAY   (1)
+            cmap        : STRING,                   (1)
+            LayerConstructor                        (1)
+            etc.
+        }
+
         zIndex      : NUMBER
         deltaZIndex : NUMBER (optional)
         minZoom     : NUMBER (optional)
         maxZoom     : NUMBER (optional)
     }
+    (1) Can for convenience also be set direct in options
     ***********************************************************/
     function MapLayer_wms(options) {
-        //Move options regarding tileLayer into layerOptions
+        //Move options regarding tileLayer into layerOptions (if any)
         options.layerOptions = options.layerOptions || {};
-        ['layers', 'zIndex', 'deltaZIndex', 'minZoom', 'maxZoom', 'LayerConstructor'].forEach( id => {
-            options.layerOptions[id] = options[id];
-            delete options[id];
+
+        ['service', 'request', 'dataset', 'layers', 'styles', 'cmap', 'zIndex', 'deltaZIndex', 'minZoom', 'maxZoom', 'LayerConstructor'].forEach( id => {
+            if (options[id] !== undefined){
+                options.layerOptions[id] = options.layerOptions[id] || options[id];
+                delete options[id];
+            }
         });
         nsMap.MapLayer.call(this, options);
     }
@@ -238628,28 +237332,29 @@ Classes to creraet static and dynamic WMS-layers
     MapLayer_wms.prototype.createLayer = nsMap.layer_wms;
 
     /***********************************************************
-    MapLayer_static - Creates a MapLayer with static WMS-layer
-    options = {
-        icon,
-        text,
-        layers     : STRING,
-        zIndex     : NUMBER
-        deltaZIndex: NUMBER (optional)
-        minZoom    : NUMBER (optional)
-        maxZoom    : NUMBER (optional)
-    }
+    MapLayer_wms_static - Creates a MapLayer with static WMS-layer
+    Also as MapLayer_static for backward combability
     ***********************************************************/
-    function MapLayer_static(options) {
+    function MapLayer_wms_static(options) {
         nsMap.MapLayer_wms.call(this, options);
     }
-    nsMap.MapLayer_static = MapLayer_static;
+    nsMap.MapLayer_wms_static = nsMap.MapLayer_static = MapLayer_wms_static;
 
-    MapLayer_static.prototype = Object.create(nsMap.MapLayer_wms.prototype);
-    MapLayer_static.prototype.createLayer = nsMap.layer_static;
-
-
+    MapLayer_wms_static.prototype = Object.create(nsMap.MapLayer_wms.prototype);
+    MapLayer_wms_static.prototype.createLayer = nsMap.layer_wms_static;
 
 
+    /***********************************************************
+    MapLayer_wms_dynamic - Creates a MapLayer with dynamic WMS-layer
+    Also as MapLayer_dynamic for backward combability
+    ***********************************************************/
+    function MapLayer_wms_dynamic(options) {
+        nsMap.MapLayer_wms.call(this, options);
+    }
+    nsMap.MapLayer_wms_dynamic = nsMap.MapLayer_dynamic = MapLayer_wms_dynamic;
+
+    MapLayer_wms_dynamic.prototype = Object.create(nsMap.MapLayer_wms.prototype);
+    MapLayer_wms_dynamic.prototype.createLayer = nsMap.layer_wms_dynamic;
 
 }(jQuery, L, this, document));
 
@@ -238889,6 +237594,89 @@ coast-lines, and name of cites and places
             this.addControl(this.backgroundLayerControl);
         }
     });
+
+}(jQuery, L, this, document));
+
+;
+/****************************************************************************
+map-layer-mmenu
+
+Objects and methods to show a modal with select of layer for one map
+****************************************************************************/
+(function ($, L, window/*, document, undefined*/) {
+    "use strict";
+
+    let ns = window.fcoo = window.fcoo || {},
+        nsMap = ns.map = ns.map || {};
+
+
+    function map_reset(){
+        $.each(nsMap.mapLayers, function(id, mapLayer){
+            if (mapLayer.isAddedToMap(this))
+                mapLayer.removeFrom(this);
+        }.bind(this));
+    }
+
+
+    nsMap.selectLayerInModal = function( map ){
+
+        let bsMenu = nsMap.main[nsMap.setupOptions.menuPanelId].mmenu;
+
+        if (!bsMenu) return;
+
+        let clonedBsMenu = bsMenu.clone({
+			isFullClone: false,
+
+            getState: function(menuItem){
+                let mapLayer = nsMap.getMapLayer(menuItem.id);
+                return mapLayer.isAddedToMap(this);
+            }.bind(map),
+
+            forceOnClick: function(id, state, menuItem){
+                let mapLayer = nsMap.getMapLayer(menuItem.id);
+                if (mapLayer){
+                    if (mapLayer.isAddedToMap(this))
+                        mapLayer.removeFrom(this);
+                    else
+                        mapLayer.addTo(this);
+                }
+            }.bind(map)
+        });
+
+        //Create fixed-content
+        const miniMapDim  = 80;
+        let $fixedContent = null;
+        if (nsMap.hasMultiMaps && (nsMap.multiMaps.setup.maps > 1)){
+            $fixedContent = $('<div></div>')
+                                .windowRatio(miniMapDim, miniMapDim*2)
+                                .addClass('mx-auto map-sync-zoom-offset') //map-sync-zoom-offset to have claasses for sub-maps
+                                .css('margin', '5px');
+
+            L.multiMaps($fixedContent, {
+                local : true,
+                border: true,
+                update: function( index, map, $mapContainer ){
+                    $mapContainer.toggleClass('current-map', this._multiMapsIndex == index);
+                }.bind(map)
+            }).set( nsMap.multiMaps.setup.id );
+        }
+
+        clonedBsMenu.showInModal({
+            header: {
+                icon: 'fa-layer-group',
+                text: {da:'Vælg lag', en:'Select layers'},
+            },
+			show              : false,
+			minHeight         : 300,
+			sameWidthAsCloneOf: true,
+            fixedContent      : $fixedContent,
+            buttons: [{
+                icon    : ns.icons.reset,
+                text    : ns.texts.reset,
+                onClick : map_reset.bind(map)
+            }]
+        }, true);
+    };
 
 }(jQuery, L, this, document));
 
@@ -239601,7 +238389,7 @@ Create mapSettingGroup = setting-group for each maps with settings for the map
                     text: ns.texts.reset,
                     onClick: function() { nsMap.resetMapSetting( map ); }
                 }],
-                helpId    : nsMap.setupOptions.topMenu.helpId.mapSetting,
+                helpId    : nsMap.setupOptions.topPanel.helpId.mapSetting,
                 helpButton: true
             },
             accordionList: [],
@@ -240092,7 +238880,7 @@ Create mapSettingGroup = setting-group for each maps with settings for the map
                     icon: ns.icons.mapSettingSingle,
                     text: ns.texts.mapSettingSingle
                 },
-                helpId    : nsMap.setupOptions.topMenu.helpId.mapSetting,
+                helpId    : nsMap.setupOptions.topPanel.helpId.mapSetting,
                 helpButton: true,
                 buttons: [{
                     icon   : ns.icons.reset,
@@ -240180,7 +238968,7 @@ Create mapSettingGroup = setting-group for each maps with settings for the map
                     text: ns.texts.mapSettingGlobal
                 },
                 closeButton: true,
-                helpId     : nsMap.setupOptions.topMenu.helpId.multiMapSetting,
+                helpId     : nsMap.setupOptions.topPanel.helpId.multiMapSetting,
                 scroll     : false,
                 helpButton : true,
                 buttons: [{
@@ -240398,7 +239186,7 @@ related issues in map sync
                 static    : false,
                 keyboard  : true,
                 content   : content,
-                helpId    : nsMap.setupOptions.topMenu.helpId.multiMapSetting,
+                helpId    : nsMap.setupOptions.topPanel.helpId.multiMapSetting,
                 helpButton: true,
                 buttons: [{
                     icon   : ns.icons.reset,
@@ -241725,7 +240513,7 @@ search-result.js
         if (lang != 'en')
             params['accept-language'] = lang + ',en';
 
-        return nsMap.setupOptions.topMenu.nominatim + '/lookup' + L.Util.getParamString(params);
+        return nsMap.setupOptions.topPanel.nominatim + '/lookup' + L.Util.getParamString(params);
     };
 
 	//Extend the prototype
@@ -241767,15 +240555,15 @@ search-result.js
             //Create the dynamic part of the modal-options
             let langList = [lang, 'en', this.localLang],
                 nameList = [];
-            
+
             langList.forEach( lang => {
                 if (lang && this.name[lang])
                     nameList.push(this.name[lang]);
-            }, this);                
+            }, this);
 
             nameList = removeDuplicates(nameList);
             nameList[0] = '<strong>' + nameList[0] + '</strong>';
-            
+
             let content = [{
                     label    : nameList.length == 1 ? {da:'Navn', en:'Name'} : {da:'Navne', en:'Names'},
                     type     : 'text',
@@ -241783,7 +240571,7 @@ search-result.js
                     center   : true,
                     //textStyle: 'fw-bold'
                 }];
-            
+
             //Add position.
             if (this.inclPositionIsDetails)
                 content.push({
@@ -241821,20 +240609,20 @@ search-result.js
                 part.type = null;
                 newPart.content = part;
                 content[index] = newPart;
-            });                
+            });
 
             content = {
                 type        : 'accordion',
                 list        : content,
-                neverClose  : true,                      
-                multiOpen   : true,                     
+                neverClose  : true,
+                multiOpen   : true,
                 allOpen     : true,
             };
 
             this.langDetails = this.langDetails || {};
             this.langDetails[lang] = this.langDetails[lang] || {
                 header : this.header,
-                content: content    
+                content: content
             };
             return this.langDetails[lang];
         },
@@ -241859,11 +240647,11 @@ search-result.js
 
             if (opt.isPosition){
                 this.names = this.name;
-            }                
+            }
             else {
                 if (opt.namedetails){
                     //There are multi-language names for the Search-Result
-                    
+
                     let localName   = opt.namedetails.name || opt.namedetails['name:'+this.localLang] || '',
                         defaultName = opt.namedetails['name:en'] || '';
 
@@ -241876,13 +240664,13 @@ search-result.js
                     if (this.localLang){
                         langList.push(this.localLang);
                         langList = removeDuplicates(langList);
-                    }                        
-                     
+                    }
+
                     //Set name = {lang:STRING}
                     this.name = {};
                     langList.forEach( lang => {
-                        this.name[lang] = opt.namedetails['name:'+lang] || opt.name || defaultName;                         
-                    }, this);                        
+                        this.name[lang] = opt.namedetails['name:'+lang] || opt.name || defaultName;
+                    }, this);
 
                     /*
                     Construct names = {lang:STRING} for all lang in i18next.languages
@@ -241890,7 +240678,7 @@ search-result.js
                     Eq. names = {
                             da: "Danmark",
                             en: "Denmark (Danmark)"
-                        }                            
+                        }
                     */
                     const localNameStr = localName ? ' (' + localName + ')' : '';
                     this.names = {};
@@ -242012,7 +240800,7 @@ search-result.js
                         interactive        : true,
 
                         className: 'hide-for-leaflet-zoom-'+this.visibleAtZoom+'-down'
-                            
+
                     });
 
                     poly.bindTooltip(this.header);
@@ -242336,8 +241124,8 @@ search.js
         searchHistoryList.goLast();
         searchHistoryList.add(text);
 
-        //Update input in top-menu with latest search
-        nsMap.main.topMenuObject.searchInput.val(searchText);
+        //Update input in top-panel with latest search
+        nsMap.main.topPanelObject.searchInput.val(searchText);
 
         //First: Search for position
         var latLngList = nsMap.text2LatLng(text);
@@ -242375,7 +241163,7 @@ search.js
             if (lang != 'en')
                 params['accept-language'] = lang + ',en';
             $.workingOn();
-            Promise.getJSON( nsMap.setupOptions.topMenu.nominatim + '/search' + L.Util.getParamString(params), {}, nominatim_response, nominatim_reject );
+            Promise.getJSON( nsMap.setupOptions.topPanel.nominatim + '/search' + L.Util.getParamString(params), {}, nominatim_response, nominatim_reject );
         }
     };
 
@@ -242743,6 +241531,9 @@ tile-filter.js
     nsParameter.directionText   = ns.directionText;
     nsParameter.directionAsText = ns.directionAsText;
 
+    nsParameter.parameters = {};
+    nsUnit.units = {};
+
 
     /****************************************************************************
     UNIT
@@ -242823,6 +241614,10 @@ tile-filter.js
         return result;
     };
 
+    nsParameter.visitAllUnits = function( func ){
+        $.each( nsUnit.units, (id, unit) => func(unit) );
+    };
+
     nsParameter.convert = function(value, fromUnit, toUnit){
         fromUnit = nsParameter.getUnit(fromUnit);
         return fromUnit ? fromUnit.convertTo(value, toUnit ) : null;
@@ -242833,7 +241628,7 @@ tile-filter.js
         fileName: {subDir: 'parameter-unit', fileName: 'cf_sn_unit.json'},
         resolve : function(data){
             $.each(data, (unit_id, options) => {
-                nsUnit[unit_id] = new nsParameter.Unit(unit_id, options);
+                nsUnit.units[unit_id] = nsUnit[unit_id] = new nsParameter.Unit(unit_id, options);
             });
 
             //Link SI-units with its derivative
@@ -242935,23 +241730,49 @@ tile-filter.js
         return typeof idOrParameter == 'string' ? nsParameter[idOrParameter] : idOrParameter;
     };
 
+    nsParameter.visitAllParameters = function(func, onlyType ){
+        $.each( nsParameter.parameters, (id, parameter) => {
+            if (!onlyType || (parameter.type == onlyType))
+                func(parameter);
+        });
+    };
+
+    nsParameter.findParameter = function(func, onlyType ){
+        let result = null;
+        $.each( nsParameter.parameters, (id, parameter) => {
+            if ( (!onlyType || (parameter.type == onlyType)) && func(parameter)){
+                result = parameter;
+                return false;
+            }
+        });
+        return result;
+    };
+
+
     //Load parameter
     ns.promiseList.append({
         fileName: {subDir: 'parameter-unit', fileName: 'cf_sn_parameter.json'},
         resolve : function(data){
             $.each(data, (parameter_id, options) => {
-                nsParameter[parameter_id] = new nsParameter.Parameter(parameter_id, options);
+                nsParameter.parameters[parameter_id] = nsParameter[parameter_id] = new nsParameter.Parameter(parameter_id, options);
             });
 
             //Link parameters to its vector-components
             $.each(nsParameter, (pId, param) => {
                 if (param.type == 'vector'){
+                    param.eastward_northward_id = [];
                     param.eastward_northward.forEach( (id, index) => {
                         param.eastward_northward[index] = nsParameter[id];
+                        param.eastward_northward_id.push(id);
                     });
+                    param.eastward_northward_id = param.eastward_northward_id.join(':');
+
+                    param.speed_direction_id = [];
                     param.speed_direction.forEach( (id, index) => {
                         param.speed_direction[index] = nsParameter[id];
+                        param.speed_direction_id.push(id);
                     });
+                    param.speed_direction_id = param.speed_direction_id.join(':');
                 }
 
                 //If no unit is given => use speed-unit or east-unit
@@ -245659,7 +244480,7 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
     ****************************************************************/
     ns.FCOOObservations = function(options = {}){
         this.options = $.extend(true, {}, {
-			VERSION         : "5.0.3",
+			VERSION         : "5.0.5",
             subDir          : {
                 observations: 'observations',
                 forecasts   : 'forecasts'
@@ -246189,41 +245010,21 @@ Methods for creating Highcharts for a Location
                     //minimized: true,
                     title        : obsGroup.tableTitle,
                     minimizedIcon: obsGroup.faIcon,
-vfFormat:'NIELS',
+                    vfFormat     : 'obs-table-cell',
 
                 });
             });
 
 let bsTable = $.bsTable( tableOptions );
-
 this.modalTables =  bsTable.asModal({
-                        header   : this.getHeader(),
-                        flexWidth: true,
-                        megaWidth: true,
-                        //content  : timeSeries.createChart.bind(timeSeries),
-                        //onClose: function(){ this.timeSeries = null; return true; }.bind(this),
-                        remove : true,
-                        show   : true
+                        header          : this.getHeader(),
+                        flexWidth       : true,
+                        megaWidth       : true,
+                        allowFullScreen : true,
+                        remove          : true,
+                        show            : true
                     });
 
-/*
-            let timeSeries = this.timeSeries = nsHC.timeSeries( this._getChartsOptions(true, mapId) );
-
-            this.modalCharts =
-                $.bsModal({
-                    header   : this.getHeader(),
-                    flexWidth: true,
-                    megaWidth: true,
-                    content  : timeSeries.createChart.bind(timeSeries),
-                    _content  : function( $body ){
-                        this.timeSeries.createChart($body);
-                    }.bind(this),
-
-                    onClose: function(){ this.timeSeries = null; return true; }.bind(this),
-                    remove : true,
-                    show   : true
-                });
-*/
         },
 
 
@@ -247476,7 +246277,7 @@ Load and display time-series in a table
 
 
     $.valueFormat.add({
-        id     : 'NIELS',
+        id     : 'obs-table-cell',
         format : function( value/*, options */){
             let result = '';
             if (value.obs){
@@ -248155,19 +246956,7 @@ Load and display time-series in a table
                     text    : {da:'Graf', en:'Chart'},
 
                     onClick : this.showCharts.bind(this, mapId),
-/*
-                    onClick : function(){
-                        $.bsModal({
-                            header: this.getHeader.bind(this),
-                            flexWidth: true,
-                            megaWidth: true,
-                            content: this.createCharts.bind(this, $body, true, mapId)
-                            remove: true,
-                            show: true
-                        });
-                        marker._popup.setSizeExtended();
-                    }.bind(this)
-*/
+
                 }, window.INCLUDETABLESINMODAL ? {
                     id     : 'table',
                     icon   : 'far fa-table',
